@@ -85,25 +85,12 @@ void Server::handle_client()
 {
 }
 
-void Server::start(int port, std::string path)
+void Server::start(int port)
 {
     signal(SIGINT, signalHandler);
     signal(SIGCHLD, SIG_IGN);
-    fs::path home_dir(path);
-
-    if (!fs::exists(home_dir) || !fs::is_directory(home_dir)) {
-        std::cerr << "Invalid path: " << path << std::endl;
-        exit(84);
-    }
 
     create_socket();
-    try {
-        fs::current_path(home_dir);
-        std::string abs_path = fs::current_path().string();
-    } catch (const fs::filesystem_error& e) {
-        std::cerr << "Error changing directory: " << e.what() << std::endl;
-        exit(84);
-    }
     clients.push_back({sockfd, POLLIN, 0});
     int opt = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
@@ -121,15 +108,14 @@ void Server::start(int port, std::string path)
 
 int main(int argc, char *argv[])
 {
-    if (argc != 3)
+    if (argc != 2)
         return 84;
     if (std::string(argv[1]) == "--help") {
         print_usage();
         return 1;
     }
     int port = atoi(argv[1]);
-    std::string path = argv[2];
     Server server;
-    server.start(port, path);
+    server.start(port);
     return 0;
 }

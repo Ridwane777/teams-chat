@@ -39,7 +39,7 @@ public:
     void handle_client();
     void handle_command(int client_fd, const std::string &command);
     void process_client_data(int client_fd, const char *data, ssize_t len);
-    void start(int port = PORT, std::string path = ".");
+    void start(int port = PORT);
 };
 
 #endif
