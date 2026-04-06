@@ -1,0 +1,31 @@
+myteams_client
+myteams_server
+
+# Ignore build files
+/build/
+/Makefile
+/CMakeFiles/
+/CMakeCache.txt
+/*.cmake
+/*.o
+/*.obj
+/*.so
+/*.exe
+/*.dll
+/*.dylib
+
+# Ignore editor files
+/.vscode/
+/.idea/
+*.swp
+*.swo
+
+file/
+obj/
+
+src/server/*.o
+src/server/*.d
+src/server/*~
+src/client/*~
+src/client/*.d
+src/client/*.o
