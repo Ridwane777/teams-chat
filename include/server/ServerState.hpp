@@ -69,8 +69,8 @@ public:
                                            const uuid_t &user_b);
     bool removeMessage(const uuid_t &uuid);
 
-    int save(const std::string &filepath) const;
-    int load(const std::string &filepath);
+    // int save(const std::string &filepath) const;
+    // int load(const std::string &filepath);
 
     std::vector<User> &users() { return _users; }
     std::vector<Team> &teams() { return _teams; }
@@ -89,7 +89,7 @@ private:
     std::vector<Comment> _comments;
     std::vector<Message> _messages;
 
-    static uuid_t _generateUuid();
+    static void _generateUuid(uuid_t &uuid);
 
     template <typename T>
     bool _removeByUuid(std::vector<T> &vec, const uuid_t &uuid);

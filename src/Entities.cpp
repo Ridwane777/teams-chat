@@ -1,41 +1,57 @@
 #include "../include/Entities.hpp"
 
-User::User(uuid_t uuid, std::string name, int fd)
-    : uuid(std::move(uuid)), name(std::move(name)), is_logged_in(true), fd(fd)
+User::User(const uuid_t &uuid, std::string name, int fd)
+    : name(std::move(name)), is_logged_in(true), fd(fd)
 {
+    uuid_copy(this->uuid, uuid);
 }
 
-Team::Team(uuid_t uuid, std::string name, std::string description,
-           uuid_t creator_uuid)
-    : uuid(std::move(uuid)), name(std::move(name)), description(std::move(description)), creator_uuid(std::move(creator_uuid))
+Team::Team(const uuid_t &uuid, std::string name, std::string description,
+           const uuid_t &creator_uuid)
+    : name(std::move(name)), description(std::move(description))
 {
+    uuid_copy(this->uuid, uuid);
+    uuid_copy(this->creator_uuid, creator_uuid);
 }
 
-Subscription::Subscription(uuid_t user_uuid, uuid_t team_uuid)
-    : user_uuid(std::move(user_uuid)), team_uuid(std::move(team_uuid))
+Subscription::Subscription(const uuid_t &user_uuid, const uuid_t &team_uuid)
 {
+    uuid_copy(this->user_uuid, user_uuid);
+    uuid_copy(this->team_uuid, team_uuid);
 }
 
-Channel::Channel(uuid_t uuid, std::string name, std::string description,
-                 uuid_t team_uuid, uuid_t creator_uuid)
-    : uuid(std::move(uuid)), name(std::move(name)), description(std::move(description)), team_uuid(std::move(team_uuid)), creator_uuid(std::move(creator_uuid))
+Channel::Channel(const uuid_t &uuid, std::string name, std::string description,
+                 const uuid_t &team_uuid, const uuid_t &creator_uuid)
+    : name(std::move(name)), description(std::move(description))
 {
+    uuid_copy(this->uuid, uuid);
+    uuid_copy(this->team_uuid, team_uuid);
+    uuid_copy(this->creator_uuid, creator_uuid);
 }
 
-Thread::Thread(uuid_t uuid, std::string title, std::string body,
-               uuid_t channel_uuid, uuid_t creator_uuid)
-    : uuid(std::move(uuid)), title(std::move(title)), body(std::move(body)), channel_uuid(std::move(channel_uuid)), creator_uuid(std::move(creator_uuid)), timestamp(std::time(nullptr))
+Thread::Thread(const uuid_t &uuid, std::string title, std::string body,
+               const uuid_t &channel_uuid, const uuid_t &creator_uuid)
+    : title(std::move(title)), body(std::move(body)), timestamp(std::time(nullptr))
 {
+    uuid_copy(this->uuid, uuid);
+    uuid_copy(this->channel_uuid, channel_uuid);
+    uuid_copy(this->creator_uuid, creator_uuid);
 }
 
-Comment::Comment(uuid_t uuid, std::string body, uuid_t thread_uuid,
-                 uuid_t author_uuid)
-    : uuid(std::move(uuid)), body(std::move(body)), thread_uuid(std::move(thread_uuid)), author_uuid(std::move(author_uuid)), timestamp(std::time(nullptr))
+Comment::Comment(const uuid_t &uuid, std::string body, const uuid_t &thread_uuid,
+                 const uuid_t &author_uuid)
+    : body(std::move(body)), timestamp(std::time(nullptr))
 {
+    uuid_copy(this->uuid, uuid);
+    uuid_copy(this->thread_uuid, thread_uuid);
+    uuid_copy(this->author_uuid, author_uuid);
 }
 
-Message::Message(uuid_t uuid, std::string body, uuid_t sender_uuid,
-                 uuid_t receiver_uuid)
-    : uuid(std::move(uuid)), body(std::move(body)), sender_uuid(std::move(sender_uuid)), receiver_uuid(std::move(receiver_uuid)), timestamp(std::time(nullptr))
+Message::Message(const uuid_t &uuid, std::string body, const uuid_t &sender_uuid,
+                 const uuid_t &receiver_uuid)
+    : body(std::move(body)), timestamp(std::time(nullptr))
 {
+    uuid_copy(this->uuid, uuid);
+    uuid_copy(this->sender_uuid, sender_uuid);
+    uuid_copy(this->receiver_uuid, receiver_uuid);
 }

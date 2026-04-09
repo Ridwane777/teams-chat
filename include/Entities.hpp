@@ -10,7 +10,7 @@ struct User
     int fd = -1;
 
     User() = default;
-    User(uuid_t uuid, std::string name, int fd);
+    User(const uuid_t &uuid, std::string name, int fd);
 };
 
 struct Team
@@ -21,8 +21,8 @@ struct Team
     uuid_t creator_uuid;
 
     Team() = default;
-    Team(uuid_t uuid, std::string name, std::string description,
-         uuid_t creator_uuid);
+        Team(const uuid_t &uuid, std::string name, std::string description,
+            const uuid_t &creator_uuid);
 };
 
 struct Subscription
@@ -31,7 +31,7 @@ struct Subscription
     uuid_t team_uuid;
 
     Subscription() = default;
-    Subscription(uuid_t user_uuid, uuid_t team_uuid);
+    Subscription(const uuid_t &user_uuid, const uuid_t &team_uuid);
 };
 
 struct Channel
@@ -43,8 +43,8 @@ struct Channel
     uuid_t creator_uuid;
 
     Channel() = default;
-    Channel(uuid_t uuid, std::string name, std::string description,
-            uuid_t team_uuid, uuid_t creator_uuid);
+    Channel(const uuid_t &uuid, std::string name, std::string description,
+            const uuid_t &team_uuid, const uuid_t &creator_uuid);
 };
 
 struct Thread
@@ -57,8 +57,8 @@ struct Thread
     time_t timestamp = 0;
 
     Thread() = default;
-    Thread(uuid_t uuid, std::string title, std::string body,
-           uuid_t channel_uuid, uuid_t creator_uuid);
+    Thread(const uuid_t &uuid, std::string title, std::string body,
+           const uuid_t &channel_uuid, const uuid_t &creator_uuid);
 };
 
 struct Comment
@@ -70,8 +70,8 @@ struct Comment
     time_t timestamp = 0;
 
     Comment() = default;
-    Comment(uuid_t uuid, std::string body, uuid_t thread_uuid,
-            uuid_t author_uuid);
+    Comment(const uuid_t &uuid, std::string body, const uuid_t &thread_uuid,
+            const uuid_t &author_uuid);
 };
 
 struct Message
@@ -83,8 +83,8 @@ struct Message
     time_t timestamp = 0;
 
     Message() = default;
-    Message(uuid_t uuid, std::string body, uuid_t sender_uuid,
-            uuid_t receiver_uuid);
+    Message(const uuid_t &uuid, std::string body, const uuid_t &sender_uuid,
+            const uuid_t &receiver_uuid);
 };
 
 #endif
