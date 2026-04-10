@@ -55,30 +55,30 @@ std::vector<std::string> UserCommand::parseArguments(std::string message)
     return args;
 }
 
-// bool UserCommand::execute(int fd, std::string message)
-// {
-//     if (_commands.empty())
-//         initMap();
+bool UserCommand::execute(int fd, std::string message)
+{
+    if (_commands.empty())
+        initMap();
 
-//     message = trim(message);
-//     if (message.empty())
-//         return true;
+    message = trim(message);
+    if (message.empty())
+        return true;
 
-//     std::vector<std::string> args = parseArguments(message);
-//     if (args.empty())
-//         return true;
+    std::vector<std::string> args = parseArguments(message);
+    if (args.empty())
+        return true;
 
-//     std::string cmdName = args[0];
-//     args.erase(args.begin());
+    std::string cmdName = args[0];
+    args.erase(args.begin());
 
-//     if (_commands.find(cmdName) != _commands.end()) {
-//         _commands[cmdName](fd, args);
-//         return true;
-//     } else {
-//         std::cout << "Unknown command: " << cmdName << std::endl;
-//         return false;
-//     }
-// }
+    if (_commands.find(cmdName) != _commands.end()) {
+        _commands[cmdName](fd, args);
+        return true;
+    } else {
+        std::cout << "Unknown command: " << cmdName << std::endl;
+        return false;
+    }
+}
 
 // // Handler implementations
 // void UserCommand::handleHelp(int fd, const std::vector<std::string> &args)
