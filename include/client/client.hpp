@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -25,7 +27,7 @@ private:
     int sockfd;
     struct sockaddr_in servaddr;
     bool _is_running;
-
+    std::string _readBuffer;
 
 public:
     Client();
@@ -35,6 +37,9 @@ public:
     void receive_response();
     void run();
 
+private:
+    void handle_response(const std::string &response);
+    std::vector<std::string> parse_response_args(const std::string &input);
 };
 
 #endif
