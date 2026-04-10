@@ -1,8 +1,9 @@
 #include "../../include/client/client.hpp"
 
-Client::Client()
+Client::Client() : _is_running(true)
 {
 }
+
 
 void Client::create_socket()
 {
@@ -43,10 +44,50 @@ void Client::receive_response()
         std::cout << buffer;
     } else if (n == 0) {
         std::cout << "Server closed the connection.\n";
+        _is_running = false;
     } else {
         std::cerr << "Error reading from server.\n";
+        _is_running = false;
     }
 }
+
+void Client::run()
+{
+    struct pollfd fds[2];
+    fds[0].fd = STDIN_FILENO;
+    fds[0].events = POLLIN;
+    fds[1].fd = sockfd;
+    fds[1].events = POLLIN;
+
+    while (_is_running) {
+        if (poll(fds, 2, -1) == -1) {
+            if (errno == EINTR) continue;
+            perror("poll");
+            break;
+        }
+
+        if (fds[0].revents & POLLIN) {
+            std::string command;
+            if (!std::getline(std::cin, command)) {
+                _is_running = false;
+            } else if (!command.empty()) {
+                if (command == "exit") {
+                    _is_running = false;
+                } else {
+                    send_command(command);
+                }
+            }
+        }
+        if (fds[1].revents & POLLIN) {
+            receive_response();
+        }
+        if (fds[1].revents & (POLLHUP | POLLERR)) {
+            std::cout << "Server disconnected.\n";
+            _is_running = false;
+        }
+    }
+}
+
 
 int main(int argc, char *argv[])
 {
@@ -59,15 +100,7 @@ int main(int argc, char *argv[])
     Client client;
     client.create_socket();
     client.connect_to_server(server_ip, port);
-    std::string command;
-    while (true) {
-        std::cout << "> ";
-        std::getline(std::cin, command);
-        if (command == "exit") {
-            break;
-        }
-        client.send_command(command);
-        client.receive_response();
-    }
+    client.run();
+
     return 0;
 }

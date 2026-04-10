@@ -12,6 +12,8 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+#include <poll.h>
+
 #undef MAX
 #define MAX 4096
 #define PORT 8080
@@ -22,6 +24,8 @@ class Client
 private:
     int sockfd;
     struct sockaddr_in servaddr;
+    bool _is_running;
+
 
 public:
     Client();
@@ -29,6 +33,8 @@ public:
     void connect_to_server(const std::string &ip, int port);
     void send_command(const std::string &command);
     void receive_response();
+    void run();
+
 };
 
 #endif
