@@ -1,9 +1,14 @@
 #include "../../include/client/client.hpp"
+#include "../../include/client/ClientCommand.hpp"
+#include "../../include/client/ResponseHandler.hpp"
+
+extern "C" {
+#include "../../libs/myteams/logging_client.h"
+}
 
 Client::Client() : _is_running(true)
 {
 }
-
 
 void Client::create_socket()
 {
@@ -41,15 +46,24 @@ void Client::receive_response()
     ssize_t n = read(sockfd, buffer, sizeof(buffer) - 1);
     if (n > 0) {
         buffer[n] = '\0';
-        std::cout << buffer;
+        _readBuffer += buffer;
+        size_t pos;
+        while ((pos = _readBuffer.find("\r\n")) != std::string::npos) {
+            std::string response = _readBuffer.substr(0, pos);
+            _readBuffer.erase(0, pos + 2);
+            handle_response(response);
+        }
     } else if (n == 0) {
         std::cout << "Server closed the connection.\n";
         _is_running = false;
     } else {
-        std::cerr << "Error reading from server.\n";
-        _is_running = false;
+        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+            std::cerr << "Error reading from server.\n";
+            _is_running = false;
+        }
     }
 }
+
 
 void Client::run()
 {
@@ -61,7 +75,8 @@ void Client::run()
 
     while (_is_running) {
         if (poll(fds, 2, -1) == -1) {
-            if (errno == EINTR) continue;
+            if (errno == EINTR)
+                continue;
             perror("poll");
             break;
         }
@@ -74,7 +89,7 @@ void Client::run()
                 if (command == "exit") {
                     _is_running = false;
                 } else {
-                    send_command(command);
+                    UserCommand::execute(sockfd, command);
                 }
             }
         }
@@ -86,6 +101,44 @@ void Client::run()
             _is_running = false;
         }
     }
+}
+
+// void Client::handle_response(const std::string &response)
+// {
+//     if (response.empty())
+//         return;
+
+//     std::vector<std::string> args = parse_response_args(response);
+//     if (args.empty())
+//         return;
+
+//     std::string code = args[0];
+//     args.erase(args.begin());
+//     ResponseHandler::execute(code, args);
+// }
+
+
+std::vector<std::string> Client::parse_response_args(const std::string &input)
+{
+    std::vector<std::string> args;
+    std::string current;
+    bool inQuotes = false;
+
+    for (size_t i = 0; i < input.size(); ++i) {
+        if (input[i] == '\"') {
+            inQuotes = !inQuotes;
+        } else if (input[i] == ' ' && !inQuotes) {
+            if (!current.empty()) {
+                args.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += input[i];
+        }
+    }
+    if (!current.empty())
+        args.push_back(current);
+    return args;
 }
 
 
@@ -101,6 +154,5 @@ int main(int argc, char *argv[])
     client.create_socket();
     client.connect_to_server(server_ip, port);
     client.run();
-
     return 0;
 }
