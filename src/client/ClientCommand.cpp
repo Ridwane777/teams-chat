@@ -80,125 +80,124 @@ bool UserCommand::execute(int fd, std::string message)
     }
 }
 
-// // Handler implementations
-// void UserCommand::handleHelp(int fd, const std::vector<std::string> &args)
-// {
-//     (void)args;
-//     std::string msg = "HELP\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleHelp(int fd, const std::vector<std::string> &args)
+{
+    (void)args;
+    std::string msg = "HELP\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 1) {
-//         std::cout << "Usage: /login [\"user_name\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "LOGIN \"" + args[0] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 1) {
+        std::cout << "Usage: /login [\"user_name\"]" << std::endl;
+        return;
+    }
+    std::string msg = "LOGIN \"" + args[0] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleLogout(int fd, const std::vector<std::string> &args)
-// {
-//     (void)args;
-//     std::string msg = "LOGOUT\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleLogout(int fd, const std::vector<std::string> &args)
+{
+    (void)args;
+    std::string msg = "LOGOUT\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleUsers(int fd, const std::vector<std::string> &args)
-// {
-//     (void)args;
-//     std::string msg = "USERS\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleUsers(int fd, const std::vector<std::string> &args)
+{
+    (void)args;
+    std::string msg = "USERS\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleUser(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 1) {
-//         std::cout << "Usage: /user [\"user_uuid\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "USER \"" + args[0] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleUser(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 1) {
+        std::cout << "Usage: /user [\"user_uuid\"]" << std::endl;
+        return;
+    }
+    std::string msg = "USER \"" + args[0] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleSend(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 2) {
-//         std::cout << "Usage: /send [\"user_uuid\"] [\"message_body\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "SEND \"" + args[0] + "\" \"" + args[1] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleSend(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 2) {
+        std::cout << "Usage: /send [\"user_uuid\"] [\"message_body\"]" << std::endl;
+        return;
+    }
+    std::string msg = "SEND \"" + args[0] + "\" \"" + args[1] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleMessages(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 1) {
-//         std::cout << "Usage: /messages [\"user_uuid\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "MESSAGES \"" + args[0] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleMessages(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 1) {
+        std::cout << "Usage: /messages [\"user_uuid\"]" << std::endl;
+        return;
+    }
+    std::string msg = "MESSAGES \"" + args[0] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleSubscribe(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 1) {
-//         std::cout << "Usage: /subscribe [\"team_uuid\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "SUBSCRIBE \"" + args[0] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleSubscribe(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 1) {
+        std::cout << "Usage: /subscribe [\"team_uuid\"]" << std::endl;
+        return;
+    }
+    std::string msg = "SUBSCRIBE \"" + args[0] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleSubscribed(int fd, const std::vector<std::string> &args)
-// {
-//     std::string msg = "SUBSCRIBED";
-//     if (args.size() == 1)
-//         msg += " \"" + args[0] + "\"";
-//     msg += "\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleSubscribed(int fd, const std::vector<std::string> &args)
+{
+    std::string msg = "SUBSCRIBED";
+    if (args.size() == 1)
+        msg += " \"" + args[0] + "\"";
+    msg += "\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleUnsubscribe(int fd, const std::vector<std::string> &args)
-// {
-//     if (args.size() != 1) {
-//         std::cout << "Usage: /unsubscribe [\"team_uuid\"]" << std::endl;
-//         return;
-//     }
-//     std::string msg = "UNSUBSCRIBE \"" + args[0] + "\"\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleUnsubscribe(int fd, const std::vector<std::string> &args)
+{
+    if (args.size() != 1) {
+        std::cout << "Usage: /unsubscribe [\"team_uuid\"]" << std::endl;
+        return;
+    }
+    std::string msg = "UNSUBSCRIBE \"" + args[0] + "\"\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleUse(int fd, const std::vector<std::string> &args)
-// {
-//     std::string msg = "USE";
-//     for (const auto &arg : args)
-//         msg += " \"" + arg + "\"";
-//     msg += "\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleUse(int fd, const std::vector<std::string> &args)
+{
+    std::string msg = "USE";
+    for (const auto &arg : args)
+        msg += " \"" + arg + "\"";
+    msg += "\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
-// {
-//     std::string msg = "CREATE";
-//     for (const auto &arg : args)
-//         msg += " \"" + arg + "\"";
-//     msg += "\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
+{
+    std::string msg = "CREATE";
+    for (const auto &arg : args)
+        msg += " \"" + arg + "\"";
+    msg += "\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleList(int fd, const std::vector<std::string> &args)
-// {
-//     (void)args;
-//     std::string msg = "LIST\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleList(int fd, const std::vector<std::string> &args)
+{
+    (void)args;
+    std::string msg = "LIST\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
 
-// void UserCommand::handleInfo(int fd, const std::vector<std::string> &args)
-// {
-//     (void)args;
-//     std::string msg = "INFO\r\n";
-//     write(fd, msg.c_str(), msg.size());
-// }
+void UserCommand::handleInfo(int fd, const std::vector<std::string> &args)
+{
+    (void)args;
+    std::string msg = "INFO\r\n";
+    write(fd, msg.c_str(), msg.size());
+}
