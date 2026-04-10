@@ -103,19 +103,19 @@ void Client::run()
     }
 }
 
-// void Client::handle_response(const std::string &response)
-// {
-//     if (response.empty())
-//         return;
+void Client::handle_response(const std::string &response)
+{
+    if (response.empty())
+        return;
 
-//     std::vector<std::string> args = parse_response_args(response);
-//     if (args.empty())
-//         return;
+    std::vector<std::string> args = parse_response_args(response);
+    if (args.empty())
+        return;
 
-//     std::string code = args[0];
-//     args.erase(args.begin());
-//     ResponseHandler::execute(code, args);
-// }
+    std::string code = args[0];
+    args.erase(args.begin());
+    ResponseHandler::execute(code, args);
+}
 
 
 std::vector<std::string> Client::parse_response_args(const std::string &input)
