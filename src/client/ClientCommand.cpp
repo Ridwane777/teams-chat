@@ -24,36 +24,36 @@ void UserCommand::initMap()
     _commands["/info"] = &handleInfo;
 }
 
-// std::string UserCommand::trim(std::string str)
-// {
-//     size_t first = str.find_first_not_of(" \t\n\r");
-//     if (std::string::npos == first) return str;
-//     size_t last = str.find_last_not_of(" \t\n\r");
-//     return str.substr(first, (last - first + 1));
-// }
+std::string UserCommand::trim(std::string str)
+{
+    size_t first = str.find_first_not_of(" \t\n\r");
+    if (std::string::npos == first) return str;
+    size_t last = str.find_last_not_of(" \t\n\r");
+    return str.substr(first, (last - first + 1));
+}
 
-// std::vector<std::string> UserCommand::parseArguments(std::string message)
-// {
-//     std::vector<std::string> args;
-//     std::string current;
-//     bool inQuotes = false;
+std::vector<std::string> UserCommand::parseArguments(std::string message)
+{
+    std::vector<std::string> args;
+    std::string current;
+    bool inQuotes = false;
 
-//     for (size_t i = 0; i < message.size(); ++i) {
-//         if (message[i] == '\"') {
-//             inQuotes = !inQuotes;
-//         } else if (message[i] == ' ' && !inQuotes) {
-//             if (!current.empty()) {
-//                 args.push_back(current);
-//                 current.clear();
-//             }
-//         } else {
-//             current += message[i];
-//         }
-//     }
-//     if (!current.empty())
-//         args.push_back(current);
-//     return args;
-// }
+    for (size_t i = 0; i < message.size(); ++i) {
+        if (message[i] == '\"') {
+            inQuotes = !inQuotes;
+        } else if (message[i] == ' ' && !inQuotes) {
+            if (!current.empty()) {
+                args.push_back(current);
+                current.clear();
+            }
+        } else {
+            current += message[i];
+        }
+    }
+    if (!current.empty())
+        args.push_back(current);
+    return args;
+}
 
 // bool UserCommand::execute(int fd, std::string message)
 // {
