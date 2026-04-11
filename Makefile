@@ -1,12 +1,13 @@
 CXX = clang++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -g3
+LDFLAGS = -L./libs/myteams -lmyteams -Wl,-rpath,./libs/myteams
 CLIENT_TARGET = myteams_client
 TARGET = myteams_server
 BIN             = unit_tests
 CRITERION       = -lcriterion
 COVFLAGS        = --coverage
 SERVER_SOURCES = src/server/server.cpp
-CLIENT_SOURCES = src/client/client.cpp
+CLIENT_SOURCES = src/client/client.cpp src/client/ClientCommand.cpp src/client/ResponseHandler.cpp
 SERVEROBJECTS = $(SERVER_SOURCES:.cpp=.o)
 CLIENTOBJECTS = $(CLIENT_SOURCES:.cpp=.o)
 
@@ -28,7 +29,8 @@ $(TARGET): $(SERVEROBJECTS)
 
 $(CLIENT_TARGET): $(CLIENTOBJECTS)
 	@echo "$(GREEN)[LINKING]$(RESET) $@"
-	$(CXX) $(CXXFLAGS) -o $(CLIENT_TARGET) $(CLIENTOBJECTS)
+	$(CXX) $(CXXFLAGS) -o $(CLIENT_TARGET) $(CLIENTOBJECTS) $(LDFLAGS)
+
 	mkdir -p obj/client
 	mv $(CLIENTOBJECTS) obj/client/
 

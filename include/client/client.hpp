@@ -3,6 +3,8 @@
 
 #include <iostream>
 #include <string>
+#include <vector>
+
 #include <netdb.h>
 #include <arpa/inet.h>
 #include <netinet/in.h>
@@ -12,6 +14,9 @@
 #include <sys/types.h>
 #include <unistd.h>
 #include <signal.h>
+#include <poll.h>
+#include <map>
+
 #undef MAX
 #define MAX 4096
 #define PORT 8080
@@ -22,6 +27,8 @@ class Client
 private:
     int sockfd;
     struct sockaddr_in servaddr;
+    bool _is_running;
+    std::string _readBuffer;
 
 public:
     Client();
@@ -29,6 +36,14 @@ public:
     void connect_to_server(const std::string &ip, int port);
     void send_command(const std::string &command);
     void receive_response();
+    void run();
+
+    static std::string url_decode(const std::string &str);
+    static std::string url_encode(const std::string &str);
+
+private:
+    void handle_response(const std::string &response);
+    std::map<std::string, std::string> parse_payload(const std::string &payload);
 };
 
 #endif
