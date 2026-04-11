@@ -36,7 +36,7 @@ void Client::connect_to_server(const std::string &ip, int port)
 
 void Client::send_command(const std::string &command)
 {
-    std::string cmd_with_newline = command + "\r\n";
+    std::string cmd_with_newline = command + "\n";
     write(sockfd, cmd_with_newline.c_str(), cmd_with_newline.size());
 }
 
@@ -48,9 +48,12 @@ void Client::receive_response()
         buffer[n] = '\0';
         _readBuffer += buffer;
         size_t pos;
-        while ((pos = _readBuffer.find("\r\n")) != std::string::npos) {
+        while ((pos = _readBuffer.find('\n')) != std::string::npos) {
             std::string response = _readBuffer.substr(0, pos);
-            _readBuffer.erase(0, pos + 2);
+            _readBuffer.erase(0, pos + 1);
+            // Ignore \r if present (at the end of the line)
+            if (!response.empty() && response.back() == '\r')
+                response.pop_back();
             handle_response(response);
         }
     } else if (n == 0) {
@@ -105,40 +108,80 @@ void Client::run()
 
 void Client::handle_response(const std::string &response)
 {
-    if (response.empty())
+    if (response.size() < 3)
         return;
 
-    std::vector<std::string> args = parse_response_args(response);
-    if (args.empty())
-        return;
+    std::string opcode = response.substr(0, 3);
+    std::string payload = (response.size() > 4) ? response.substr(4) : "";
 
-    std::string code = args[0];
-    args.erase(args.begin());
-    ResponseHandler::execute(code, args);
+    std::map<std::string, std::string> fields = parse_payload(payload);
+    
+    // Decode all values in the payload
+    for (auto &pair : fields) {
+        pair.second = url_decode(pair.second);
+    }
+
+    ResponseHandler::execute(opcode, fields);
 }
 
-
-std::vector<std::string> Client::parse_response_args(const std::string &input)
+std::string Client::url_decode(const std::string &str)
 {
-    std::vector<std::string> args;
-    std::string current;
-    bool inQuotes = false;
-
-    for (size_t i = 0; i < input.size(); ++i) {
-        if (input[i] == '\"') {
-            inQuotes = !inQuotes;
-        } else if (input[i] == ' ' && !inQuotes) {
-            if (!current.empty()) {
-                args.push_back(current);
-                current.clear();
-            }
+    std::string res;
+    for (size_t i = 0; i < str.length(); ++i) {
+        if (str[i] == '%' && i + 2 < str.length()) {
+            std::string hex = str.substr(i + 1, 2);
+            char c = (char)strtol(hex.c_str(), nullptr, 16);
+            res += c;
+            i += 2;
         } else {
-            current += input[i];
+            res += str[i];
         }
     }
-    if (!current.empty())
-        args.push_back(current);
-    return args;
+    return res;
+}
+
+std::string Client::url_encode(const std::string &str)
+{
+    static const char *hex = "0123456789ABCDEF";
+    std::string res;
+    for (unsigned char c : str) {
+        if (isalnum(c) || c == '-' || c == '_' || c == '.' || c == '~') {
+            res += c;
+        } else {
+            res += '%';
+            res += hex[c >> 4];
+            res += hex[c & 0xf];
+        }
+    }
+    return res;
+}
+
+std::map<std::string, std::string> Client::parse_payload(const std::string &payload)
+{
+    std::map<std::string, std::string> fields;
+    std::string current;
+    bool inValue = false;
+    std::string key;
+
+    for (size_t i = 0; i < payload.length(); ++i) {
+        if (payload[i] == '=') {
+            key = current;
+            current.clear();
+            inValue = true;
+        } else if (payload[i] == ' ' && inValue) {
+            fields[key] = current;
+            current.clear();
+            inValue = false;
+        } else {
+            current += payload[i];
+        }
+    }
+    if (inValue) {
+        fields[key] = current;
+    } else if (!current.empty()) {
+        // Handle case with key but no value if needed, but MTAP specifies key=value
+    }
+    return fields;
 }
 
 
