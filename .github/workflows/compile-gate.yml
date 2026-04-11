@@ -1,0 +1,38 @@
+name: MyTeams Build Gate
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build-and-check-binaries:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Build project
+      run: make all
+
+    - name: Verify required binaries
+      run: |
+        set -e
+
+        if [ ! -x ./myteams_server ]; then
+          echo "Missing or non-executable binary: myteams_server"
+          ls -la
+          exit 1
+        fi
+
+        if [ ! -x ./myteams_client ]; then
+          echo "Missing or non-executable binary: myteams_client"
+          ls -la
+          exit 1
+        fi
+
+        echo "Both binaries are present and executable."
