@@ -1,36 +1,25 @@
-#ifndef RESPONSE_HANDLER_HPP_
-#define RESPONSE_HANDLER_HPP_
+#ifndef RESPONSE_HANDLER_HPP
+#define RESPONSE_HANDLER_HPP
 
 #include <iostream>
 #include <string>
-#include <map>
 #include <vector>
+#include <map>
 
 class ResponseHandler {
 public:
-    typedef void (*handler_t)(const std::vector<std::string> &args);
-    static void execute(const std::string &code, const std::vector<std::string> &args);
+    static void execute(const std::string &opcode, const std::map<std::string, std::string> &fields);
 
 private:
-    static std::map<std::string, handler_t> _responses;
-    static void initMap();
+    static std::string _selfUuid;
 
-    // Event Handlers
-    static void handleLoggedIn(const std::vector<std::string> &args);
-    static void handleLoggedOut(const std::vector<std::string> &args);
-    static void handlePrivateMessageReceived(const std::vector<std::string> &args);
+    static void handle_error(const std::map<std::string, std::string> &fields);
+    static void handle_event(const std::map<std::string, std::string> &fields);
+    static void handle_ok(const std::map<std::string, std::string> &fields);
     
-    // Print Handlers
-    static void handlePrintUsers(const std::vector<std::string> &args);
-    static void handlePrintTeams(const std::vector<std::string> &args);
-    
-    // Error Handlers
-    static void handleUnknownTeam(const std::vector<std::string> &args);
-    static void handleUnknownChannel(const std::vector<std::string> &args);
-    static void handleUnknownThread(const std::vector<std::string> &args);
-    static void handleUnknownUser(const std::vector<std::string> &args);
-    static void handleUnauthorized(const std::vector<std::string> &args);
-    static void handleAlreadyExist(const std::vector<std::string> &args);
+    // Heuristic helpers for handle_ok
+    static void handle_ok_user(const std::map<std::string, std::string> &fields);
+    static void handle_ok_resource(const std::map<std::string, std::string> &fields);
 };
 
-#endif /* !RESPONSE_HANDLER_HPP_ */
+#endif
