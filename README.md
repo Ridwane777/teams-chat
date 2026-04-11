@@ -5,7 +5,7 @@ Projet reseau de type client/serveur inspire de Teams, realise en C++20.
 Le depot contient:
 - un serveur TCP (`myteams_server`)
 - un client console (`myteams_client`)
-- une specification de protocole MTAP dans `RFC-0001-MTAP.md`
+- une specification de protocole MTAP dans [RFC-0001-MTAP.md](RFC-0001-MTAP.md)
 
 ## Objectif
 
@@ -17,13 +17,25 @@ Implementer une application collaborative avec:
 - commentaires
 - messagerie directe
 
-La communication suit le protocole MTAP (MyTeams Application Protocol), decrit dans `RFC-0001-MTAP.md`.
+La communication suit le protocole MTAP (MyTeams Application Protocol), decrit dans [RFC-0001-MTAP.md](RFC-0001-MTAP.md).
 
 ## Prerequis
 
 - Linux
 - `clang++` avec support C++20
+    ```
+    sudo apt update && sudo apt upgrade
+    sudo apt install clang
+    ```
 - `make`
+    ```
+    sudo apt update
+    sudo apt install make
+    ```
+    or
+    ```
+    sudo apt install build-essential
+    ```
 - bibliotheques reseau POSIX (`socket`, `poll`, etc.)
 
 ## Compilation
