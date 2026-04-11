@@ -87,9 +87,23 @@ bool UserCommand::execute(int fd, std::string message)
 
 void UserCommand::handleHelp(int fd, const std::vector<std::string> &args)
 {
+    (void)fd;
     (void)args;
-    std::string msg = "HELP\r\n";
-    write(fd, msg.c_str(), msg.size());
+    std::cout << "Usage:" << std::endl;
+    std::cout << "  /help : show this help" << std::endl;
+    std::cout << "  /login [\"user_name\"] : set the user_name used by client" << std::endl;
+    std::cout << "  /logout : disconnects the client from the server" << std::endl;
+    std::cout << "  /users : list all users that exist on the server" << std::endl;
+    std::cout << "  /user [\"user_uuid\"] : get information about a user" << std::endl;
+    std::cout << "  /send [\"user_uuid\"] [\"message_body\"] : send a message to a user" << std::endl;
+    std::cout << "  /messages [\"user_uuid\"] : list all messages with a user" << std::endl;
+    std::cout << "  /subscribe [\"team_uuid\"] : subscribe to a team" << std::endl;
+    std::cout << "  /subscribed [\"team_uuid\"] : list subscribed teams or users in a team" << std::endl;
+    std::cout << "  /unsubscribe [\"team_uuid\"] : unsubscribe from a team" << std::endl;
+    std::cout << "  /use [\"team_uuid\"] [\"channel_uuid\"] [\"thread_uuid\"] : set context" << std::endl;
+    std::cout << "  /create : create a resource (team, channel, thread, comment)" << std::endl;
+    std::cout << "  /list : list resources in the current context" << std::endl;
+    std::cout << "  /info : get information about the current resource" << std::endl;
 }
 
 void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
@@ -207,16 +221,28 @@ void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
 {
     std::string msg;
     if (_teamUuid.empty()) {
-        if (args.size() != 2) { std::cout << "Usage: /create \"team_name\" \"team_desc\"" << std::endl; return; }
+        if (args.size() != 2) { 
+            std::cout << "Usage: /create \"team_name\" \"team_desc\"" << std::endl; 
+            return;
+        }
         msg = "TCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
     } else if (_channelUuid.empty()) {
-        if (args.size() != 2) { std::cout << "Usage: /create \"channel_name\" \"channel_desc\"" << std::endl; return; }
+        if (args.size() != 2) {
+            std::cout << "Usage: /create \"channel_name\" \"channel_desc\"" << std::endl;
+            return;
+        }
         msg = "CCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
     } else if (_threadUuid.empty()) {
-        if (args.size() != 2) { std::cout << "Usage: /create \"thread_title\" \"thread_body\"" << std::endl; return; }
+        if (args.size() != 2) {
+            std::cout << "Usage: /create \"thread_title\" \"thread_body\"" << std::endl;
+            return;
+        }
         msg = "HCR title=" + Client::url_encode(args[0]) + " body=" + Client::url_encode(args[1]);
     } else {
-        if (args.size() != 1) { std::cout << "Usage: /create \"comment_body\"" << std::endl; return; }
+        if (args.size() != 1) {
+            std::cout << "Usage: /create \"comment_body\"" << std::endl;
+            return;
+        }
         msg = "OCR body=" + Client::url_encode(args[0]);
     }
     msg += "\n";
