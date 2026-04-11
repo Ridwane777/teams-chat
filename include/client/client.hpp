@@ -15,6 +15,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <poll.h>
+#include <map>
 
 #undef MAX
 #define MAX 4096
@@ -37,9 +38,12 @@ public:
     void receive_response();
     void run();
 
+    static std::string url_decode(const std::string &str);
+    static std::string url_encode(const std::string &str);
+
 private:
     void handle_response(const std::string &response);
-    std::vector<std::string> parse_response_args(const std::string &input);
+    std::map<std::string, std::string> parse_payload(const std::string &payload);
 };
 
 #endif
