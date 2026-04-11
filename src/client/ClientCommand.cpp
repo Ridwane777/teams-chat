@@ -5,6 +5,11 @@
 #include <cstring>
 
 std::map<std::string, UserCommand::handler_t> UserCommand::_commands;
+std::string UserCommand::_teamUuid = "";
+std::string UserCommand::_channelUuid = "";
+std::string UserCommand::_threadUuid = "";
+
+#include "../../include/client/client.hpp"
 
 void UserCommand::initMap()
 {
@@ -93,21 +98,21 @@ void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /login [\"user_name\"]" << std::endl;
         return;
     }
-    std::string msg = "LOGIN \"" + args[0] + "\"\r\n";
+    std::string msg = "LOG name=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleLogout(int fd, const std::vector<std::string> &args)
 {
     (void)args;
-    std::string msg = "LOGOUT\r\n";
+    std::string msg = "OUT\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleUsers(int fd, const std::vector<std::string> &args)
 {
     (void)args;
-    std::string msg = "USERS\r\n";
+    std::string msg = "ULS\n";
     write(fd, msg.c_str(), msg.size());
 }
 
@@ -117,7 +122,7 @@ void UserCommand::handleUser(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /user [\"user_uuid\"]" << std::endl;
         return;
     }
-    std::string msg = "USER \"" + args[0] + "\"\r\n";
+    std::string msg = "UGT uuid=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
@@ -127,7 +132,7 @@ void UserCommand::handleSend(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /send [\"user_uuid\"] [\"message_body\"]" << std::endl;
         return;
     }
-    std::string msg = "SEND \"" + args[0] + "\" \"" + args[1] + "\"\r\n";
+    std::string msg = "SND to=" + Client::url_encode(args[0]) + " body=" + Client::url_encode(args[1]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
@@ -137,7 +142,7 @@ void UserCommand::handleMessages(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /messages [\"user_uuid\"]" << std::endl;
         return;
     }
-    std::string msg = "MESSAGES \"" + args[0] + "\"\r\n";
+    std::string msg = "MLS with=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
@@ -147,16 +152,16 @@ void UserCommand::handleSubscribe(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /subscribe [\"team_uuid\"]" << std::endl;
         return;
     }
-    std::string msg = "SUBSCRIBE \"" + args[0] + "\"\r\n";
+    std::string msg = "TSB team=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleSubscribed(int fd, const std::vector<std::string> &args)
 {
-    std::string msg = "SUBSCRIBED";
+    std::string msg = "TSD";
     if (args.size() == 1)
-        msg += " \"" + args[0] + "\"";
-    msg += "\r\n";
+        msg += " team=" + Client::url_encode(args[0]);
+    msg += "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
@@ -166,38 +171,68 @@ void UserCommand::handleUnsubscribe(int fd, const std::vector<std::string> &args
         std::cout << "Usage: /unsubscribe [\"team_uuid\"]" << std::endl;
         return;
     }
-    std::string msg = "UNSUBSCRIBE \"" + args[0] + "\"\r\n";
+    std::string msg = "TUS team=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleUse(int fd, const std::vector<std::string> &args)
 {
     std::string msg = "USE";
-    for (const auto &arg : args)
-        msg += " \"" + arg + "\"";
-    msg += "\r\n";
+    if (args.size() >= 1) {
+        _teamUuid = args[0];
+        msg += " team=" + Client::url_encode(_teamUuid);
+    } else {
+        _teamUuid.clear();
+        _channelUuid.clear();
+        _threadUuid.clear();
+    }
+    if (args.size() >= 2) {
+        _channelUuid = args[1];
+        msg += " channel=" + Client::url_encode(_channelUuid);
+    } else {
+        _channelUuid.clear();
+        _threadUuid.clear();
+    }
+    if (args.size() >= 3) {
+        _threadUuid = args[2];
+        msg += " thread=" + Client::url_encode(_threadUuid);
+    } else {
+        _threadUuid.clear();
+    }
+    msg += "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
 {
-    std::string msg = "CREATE";
-    for (const auto &arg : args)
-        msg += " \"" + arg + "\"";
-    msg += "\r\n";
+    std::string msg;
+    if (_teamUuid.empty()) {
+        if (args.size() != 2) { std::cout << "Usage: /create \"team_name\" \"team_desc\"" << std::endl; return; }
+        msg = "TCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
+    } else if (_channelUuid.empty()) {
+        if (args.size() != 2) { std::cout << "Usage: /create \"channel_name\" \"channel_desc\"" << std::endl; return; }
+        msg = "CCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
+    } else if (_threadUuid.empty()) {
+        if (args.size() != 2) { std::cout << "Usage: /create \"thread_title\" \"thread_body\"" << std::endl; return; }
+        msg = "HCR title=" + Client::url_encode(args[0]) + " body=" + Client::url_encode(args[1]);
+    } else {
+        if (args.size() != 1) { std::cout << "Usage: /create \"comment_body\"" << std::endl; return; }
+        msg = "OCR body=" + Client::url_encode(args[0]);
+    }
+    msg += "\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleList(int fd, const std::vector<std::string> &args)
 {
     (void)args;
-    std::string msg = "LIST\r\n";
+    std::string msg = "LST\n";
     write(fd, msg.c_str(), msg.size());
 }
 
 void UserCommand::handleInfo(int fd, const std::vector<std::string> &args)
 {
     (void)args;
-    std::string msg = "INFO\r\n";
+    std::string msg = "INF\n";
     write(fd, msg.c_str(), msg.size());
 }
