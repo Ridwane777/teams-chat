@@ -16,8 +16,6 @@ private:
     static void handle_error(const std::map<std::string, std::string> &fields);
     static void handle_event(const std::map<std::string, std::string> &fields);
     static void handle_ok(const std::map<std::string, std::string> &fields);
-    
-    // Heuristic helpers for handle_ok
     static void handle_ok_user(const std::map<std::string, std::string> &fields);
     static void handle_ok_resource(const std::map<std::string, std::string> &fields);
 };
