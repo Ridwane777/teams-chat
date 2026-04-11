@@ -2,6 +2,9 @@
 #include "../../include/client/ClientCommand.hpp"
 #include "../../include/client/ResponseHandler.hpp"
 
+#include <sstream>
+#include <stdexcept>
+
 extern "C" {
 #include "../../libs/myteams/logging_client.h"
 }
@@ -51,7 +54,6 @@ void Client::receive_response()
         while ((pos = _readBuffer.find('\n')) != std::string::npos) {
             std::string response = _readBuffer.substr(0, pos);
             _readBuffer.erase(0, pos + 1);
-            // Ignore \r if present (at the end of the line)
             if (!response.empty() && response.back() == '\r')
                 response.pop_back();
             handle_response(response);
@@ -114,14 +116,15 @@ void Client::handle_response(const std::string &response)
     std::string opcode = response.substr(0, 3);
     std::string payload = (response.size() > 4) ? response.substr(4) : "";
 
-    std::map<std::string, std::string> fields = parse_payload(payload);
-    
-    // Decode all values in the payload
-    for (auto &pair : fields) {
-        pair.second = url_decode(pair.second);
+    try {
+        std::map<std::string, std::string> fields = parse_payload(payload);
+        for (auto &pair : fields) {
+            pair.second = url_decode(pair.second);
+        }
+        ResponseHandler::execute(opcode, fields);
+    } catch (const std::exception &e) {
+        std::cerr << "Protocol Error: malformed payload - " << e.what() << "\n";
     }
-
-    ResponseHandler::execute(opcode, fields);
 }
 
 std::string Client::url_decode(const std::string &str)
@@ -159,27 +162,23 @@ std::string Client::url_encode(const std::string &str)
 std::map<std::string, std::string> Client::parse_payload(const std::string &payload)
 {
     std::map<std::string, std::string> fields;
-    std::string current;
-    bool inValue = false;
-    std::string key;
+    if (payload.empty())
+        return fields;
 
-    for (size_t i = 0; i < payload.length(); ++i) {
-        if (payload[i] == '=') {
-            key = current;
-            current.clear();
-            inValue = true;
-        } else if (payload[i] == ' ' && inValue) {
-            fields[key] = current;
-            current.clear();
-            inValue = false;
-        } else {
-            current += payload[i];
+    std::stringstream ss(payload);
+    std::string token;
+
+    while (ss >> token) {
+        size_t equalPos = token.find('=');
+        if (equalPos == std::string::npos || equalPos == 0 || equalPos == token.length() - 1) {
+            throw std::invalid_argument("missing or invalid key=value format in token: " + token);
         }
-    }
-    if (inValue) {
-        fields[key] = current;
-    } else if (!current.empty()) {
-        // Handle case with key but no value if needed, but MTAP specifies key=value
+        std::string key = token.substr(0, equalPos);
+        std::string value = token.substr(equalPos + 1);
+        if (fields.count(key)) {
+            throw std::invalid_argument("duplicate key: " + key);
+        }
+        fields[key] = value;
     }
     return fields;
 }
