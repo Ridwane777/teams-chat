@@ -14,6 +14,9 @@ public:
 
 private:
     static std::map<std::string, handler_t> _commands;
+    static std::string _teamUuid;
+    static std::string _channelUuid;
+    static std::string _threadUuid;
     static void initMap();
 
     static void handleHelp(int fd, const std::vector<std::string> &args);
