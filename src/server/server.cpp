@@ -83,6 +83,27 @@ void Server::process_client_data(int client_fd, const char *data, ssize_t len)
 
 void Server::handle_client()
 {
+    for (size_t i = 0; i < clients.size(); ++i) {
+        if (clients[i].revents & POLLIN) {
+            if (clients[i].fd == sockfd) {
+                int new_fd = accept_socket();
+                clients.push_back({new_fd, POLLIN, 0});
+            } else {
+                char buffer[MAX];
+                bzero(buffer, sizeof(buffer));
+                ssize_t bytes_read = read(clients[i].fd, buffer, sizeof(buffer) - 1);
+                if (bytes_read <= 0) {
+                    // command_handler->remove_client_session(clients[i].fd);
+                    client_buffers.erase(clients[i].fd);
+                    close(clients[i].fd);
+                    clients.erase(clients.begin() + i);
+                    --i;
+                } else {
+                    process_client_data(clients[i].fd, buffer, bytes_read);
+                }
+            }
+        }
+    }
 }
 
 void Server::start(int port)

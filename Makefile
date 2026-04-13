@@ -6,7 +6,7 @@ TARGET = myteams_server
 BIN             = unit_tests
 CRITERION       = -lcriterion
 COVFLAGS        = --coverage
-SERVER_SOURCES = src/server/server.cpp
+SERVER_SOURCES = src/server/server.cpp src/server/protocol/Protocol.cpp
 CLIENT_SOURCES = src/client/client.cpp src/client/ClientCommand.cpp src/client/ResponseHandler.cpp
 SERVEROBJECTS = $(SERVER_SOURCES:.cpp=.o)
 CLIENTOBJECTS = $(CLIENT_SOURCES:.cpp=.o)
