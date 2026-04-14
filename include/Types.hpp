@@ -7,6 +7,7 @@
 #include <optional>
 #include <string>
 #include <functional>
+#include <map>
 #include <algorithm>
 #include <stdexcept>
 #include <uuid/uuid.h>

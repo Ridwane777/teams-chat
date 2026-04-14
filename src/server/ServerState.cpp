@@ -1,6 +1,20 @@
 #include "../../include/server/ServerState.hpp"
+extern "C" {
+#include "../../libs/myteams/logging_server.h"
+}
 #include <algorithm>
 #include <stdexcept>
+
+namespace
+{
+    std::string uuidToString(const uuid_t &uuid)
+    {
+        char buffer[37] = {0};
+
+        uuid_unparse_lower(uuid, buffer);
+        return std::string(buffer);
+    }
+}
 
 void ServerState::_generateUuid(uuid_t &uuid)
 {
@@ -26,6 +40,8 @@ User &ServerState::createUser(const std::string &name, int fd)
 
     _generateUuid(generated_uuid);
     _users.emplace_back(generated_uuid, name, fd);
+    const std::string user_uuid = uuidToString(_users.back().uuid);
+    server_event_user_created(user_uuid.c_str(), _users.back().name.c_str());
     return _users.back();
 }
 
@@ -65,6 +81,9 @@ Team &ServerState::createTeam(const std::string &name,
 
     _generateUuid(generated_uuid);
     _teams.emplace_back(generated_uuid, name, description, creator_uuid);
+    const std::string team_uuid = uuidToString(_teams.back().uuid);
+    const std::string creator = uuidToString(creator_uuid);
+    server_event_team_created(team_uuid.c_str(), _teams.back().name.c_str(), creator.c_str());
     return _teams.back();
 }
 
@@ -95,6 +114,9 @@ Subscription &ServerState::createSubscription(const uuid_t &user_uuid,
     if (subscriptionExists(user_uuid, team_uuid))
         throw std::runtime_error("Subscription already exists");
     _subscriptions.emplace_back(user_uuid, team_uuid);
+    const std::string team = uuidToString(team_uuid);
+    const std::string user = uuidToString(user_uuid);
+    server_event_user_subscribed(team.c_str(), user.c_str());
     return _subscriptions.back();
 }
 
@@ -121,6 +143,9 @@ bool ServerState::removeSubscription(const uuid_t &user_uuid,
     if (it == _subscriptions.end())
         return false;
     _subscriptions.erase(it);
+    const std::string team = uuidToString(team_uuid);
+    const std::string user = uuidToString(user_uuid);
+    server_event_user_unsubscribed(team.c_str(), user.c_str());
     return true;
 }
 
@@ -163,6 +188,9 @@ Channel &ServerState::createChannel(const std::string &name,
     _generateUuid(generated_uuid);
     _channels.emplace_back(generated_uuid, name, description,
                            team_uuid, creator_uuid);
+    const std::string team = uuidToString(team_uuid);
+    const std::string channel = uuidToString(_channels.back().uuid);
+    server_event_channel_created(team.c_str(), channel.c_str(), _channels.back().name.c_str());
     return _channels.back();
 }
 
@@ -210,6 +238,11 @@ Thread &ServerState::createThread(const std::string &title,
     _generateUuid(generated_uuid);
     _threads.emplace_back(generated_uuid, title, body,
                           channel_uuid, creator_uuid);
+    const std::string channel = uuidToString(channel_uuid);
+    const std::string thread = uuidToString(_threads.back().uuid);
+    const std::string creator = uuidToString(creator_uuid);
+    server_event_thread_created(channel.c_str(), thread.c_str(), creator.c_str(),
+                                _threads.back().title.c_str(), _threads.back().body.c_str());
     return _threads.back();
 }
 
@@ -244,6 +277,9 @@ Comment &ServerState::createComment(const std::string &body,
 
     _generateUuid(generated_uuid);
     _comments.emplace_back(generated_uuid, body, thread_uuid, author_uuid);
+    const std::string thread = uuidToString(thread_uuid);
+    const std::string author = uuidToString(author_uuid);
+    server_event_reply_created(thread.c_str(), author.c_str(), _comments.back().body.c_str());
     return _comments.back();
 }
 
@@ -278,6 +314,10 @@ Message &ServerState::createMessage(const std::string &body,
 
     _generateUuid(generated_uuid);
     _messages.emplace_back(generated_uuid, body, sender_uuid, receiver_uuid);
+    const std::string sender = uuidToString(sender_uuid);
+    const std::string receiver = uuidToString(receiver_uuid);
+    server_event_private_message_sended(sender.c_str(), receiver.c_str(),
+                                        _messages.back().body.c_str());
     return _messages.back();
 }
 

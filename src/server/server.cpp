@@ -22,7 +22,7 @@ void Server::create_socket()
 {
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd == -1) {
-        std::cerr << "socket creation failed...\n";
+        std::cout << "socket creation failed..." << std::endl;
         exit(0);
     }
 }
@@ -34,7 +34,7 @@ void Server::bind_socket(int port)
     servaddr.sin_addr.s_addr = htonl(INADDR_ANY);
     servaddr.sin_port = htons(port);
     if ((bind(sockfd, (SA *)&servaddr, sizeof(servaddr))) != 0) {
-        std::cerr << "socket bind failed...\n";
+        std::cout << "socket bind failed..." << std::endl;
         exit(0);
     }
 }
@@ -43,7 +43,7 @@ void Server::bind_socket(int port)
 void Server::listen_socket()
 {
     if ((listen(sockfd, 100)) != 0) {
-        std::cerr << "Listen failed...\n";
+        std::cout << "Listen failed..." << std::endl;
         exit(0);
     }
 }
@@ -53,7 +53,7 @@ int Server::accept_socket()
     len = sizeof(cli);
     connfd = accept(sockfd, (SA *)&cli, (socklen_t *)&len);
     if (connfd < 0) {
-        std::cerr << "server accept failed...\n";
+        std::cout << "server accept failed..." << std::endl;
         return -1;
     }
     std::cout << "<- 220 Service ready for new user." << std::endl;
@@ -120,7 +120,7 @@ void Server::start(int port)
     while (running) {
         int ready = poll(clients.data(), clients.size(), -1);
         if (ready < 0) {
-            perror("poll");
+            std::cout << "poll failed" << std::endl;
             exit(84);
         }
         handle_client();
