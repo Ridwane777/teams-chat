@@ -10,6 +10,7 @@
 extern "C" {
 #include "../../../libs/myteams/logging_server.h"
 }
+#include "../../Utils.hpp"
 
 using Function = std::function<void(int, Frame &)>;
 

@@ -3,6 +3,8 @@
 CommandHandler::CommandHandler()
 {
     commands["LOG"] = [this](int fd, Frame &f) { handle_login(fd, f); };
+    commands["OUT"] = [this](int fd, Frame &f) { handle_logout(fd, f); };
+    commands["ULS"] = [this](int fd, Frame &f) { handle_users_list(fd, f); };
 }
 
 void CommandHandler::handle_command(int client_fd, const std::string &command)
@@ -61,4 +63,34 @@ void CommandHandler::handle_login(int client_fd, Frame &frame)
         const std::string response = "New user created and logged_in: " + _protocol.ok({{"uuid", user_uuid}, {"name", new_user.name}, {"logged_in", "1"}});
         write(client_fd, response.c_str(), response.size());
     }
+}
+
+void CommandHandler::handle_logout(int client_fd, Frame &frame)
+{
+    (void)frame;
+    User *user = _server_state.findUserByFd(client_fd);
+    if (!user || !user->is_logged_in) {
+        std::cout << "Logout failed: no user logged in on this fd" << std::endl;
+        write(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "not_logged_in").c_str(),
+              _protocol.err(ErrCode::BAD_REQUEST, "not_logged_in").size());
+        return;
+    }
+    char user_uuid[37] = {0};
+    uuid_unparse_lower(user->uuid, user_uuid);
+    user->is_logged_in = false;
+    server_event_user_logged_out(user_uuid);
+    std::cout << "User logged out: " << user->name << std::endl;
+    const std::string response = _protocol.ok({});
+    write(client_fd, response.c_str(), response.size());
+}
+
+void CommandHandler::handle_users_list(int client_fd, Frame &frame)
+{
+    (void)frame;
+    std::string response;
+    for (const User &user : _server_state.users()) {
+        response += _protocol.ok({{"uuid", uuidToString(user.uuid)}, {"name", user.name}, {"logged_in", user.is_logged_in ? "1" : "0"}});
+    }
+    response += _protocol.ok({{"count", std::to_string(_server_state.users().size())}});
+    write(client_fd, response.c_str(), response.size());
 }

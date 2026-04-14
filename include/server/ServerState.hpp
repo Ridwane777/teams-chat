@@ -2,7 +2,7 @@
 #define SERVERSTATE_HPP
 
 #include "../Entities.hpp"
-
+#include "../Utils.hpp"
 class ServerState
 {
 public:
