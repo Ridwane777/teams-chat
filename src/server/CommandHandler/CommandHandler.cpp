@@ -1,5 +1,10 @@
 #include "../../../include/server/CommandHandler/CommandHandler.hpp"
 
+CommandHandler::CommandHandler()
+{
+    commands["LOG"] = [this](int fd, Frame &f) { handle_login(fd, f); };
+}
+
 void CommandHandler::handle_command(int client_fd, const std::string &command)
 {
     auto frame = _protocol.parse(command);
@@ -18,7 +23,7 @@ void CommandHandler::execute_command(int client_fd, Frame &frame)
     (void)frame;
 }
 
-void CommandHandler::handle_login(int client_fd)
+void CommandHandler::handle_login(int client_fd, Frame &frame)
 {
     User *user = _server_state.findUserByFd(client_fd);
     if (user) {
@@ -33,10 +38,27 @@ void CommandHandler::handle_login(int client_fd)
             uuid_unparse_lower(user->uuid, user_uuid);
             server_event_user_logged_in(user_uuid);
             std::cout << "User logged in: " << user->name << std::endl;
-            write(client_fd, _protocol.ok({{"user_uuid", std::string(user->uuid, user->uuid + 16)}}).c_str(),
-                  _protocol.ok({{"user_uuid", std::string(user->uuid, user->uuid + 16)}}).size());
+            const std::string response = _protocol.ok({{"uuid", user_uuid}, {"name", user->name}, {"logged_in", "1"}});
+            write(client_fd, response.c_str(), response.size());
             
         }
         return;
+    } else {
+        std::string name = frame.get("name");
+        if (name.empty()) {
+            std::cout << "Login failed: missing name field" << std::endl;
+            write(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "missing_name").c_str(),
+                  _protocol.err(ErrCode::BAD_REQUEST, "missing_name").size());
+            return;
+        }
+        User &new_user = _server_state.createUser(name, client_fd);
+        char user_uuid[37] = {0};
+        uuid_unparse_lower(new_user.uuid, user_uuid);
+        std::cout << "New user created and logged in: " << new_user.name << std::endl;
+        server_event_user_created(user_uuid, new_user.name.c_str());
+        new_user.is_logged_in = true;
+        server_event_user_logged_in(user_uuid);
+        const std::string response = "New user created and logged_in: " + _protocol.ok({{"uuid", user_uuid}, {"name", new_user.name}, {"logged_in", "1"}});
+        write(client_fd, response.c_str(), response.size());
     }
 }
