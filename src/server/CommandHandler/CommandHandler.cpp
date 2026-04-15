@@ -5,6 +5,7 @@ CommandHandler::CommandHandler()
     commands["LOG"] = [this](int fd, Frame &f) { handle_login(fd, f); };
     commands["OUT"] = [this](int fd, Frame &f) { handle_logout(fd, f); };
     commands["ULS"] = [this](int fd, Frame &f) { handle_users_list(fd, f); };
+    commands["UGT"] = [this](int fd, Frame &f) { handle_user_get(fd, f); };
 }
 
 void CommandHandler::handle_command(int client_fd, const std::string &command)
@@ -93,4 +94,32 @@ void CommandHandler::handle_users_list(int client_fd, Frame &frame)
     }
     response += _protocol.ok({{"count", std::to_string(_server_state.users().size())}});
     write(client_fd, response.c_str(), response.size());
+}
+
+void CommandHandler::handle_user_get(int client_fd, Frame &frame)
+{
+    if (!frame.has("uuid")) {
+        std::cout << "User get failed: missing uuid field" << std::endl;
+        write(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "missing_uuid").c_str(),
+              _protocol.err(ErrCode::BAD_REQUEST, "missing_uuid").size());
+        return;
+    } else {
+        std::string uuid_str = frame.get("uuid");
+        uuid_t uuid;
+        if (uuid_parse(uuid_str.c_str(), uuid) != 0) {
+            std::cout << "User get failed: invalid uuid format" << std::endl;
+            write(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "invalid_uuid").c_str(),
+                  _protocol.err(ErrCode::BAD_REQUEST, "invalid_uuid").size());
+            return;
+        }
+        User *user = _server_state.findUserByUuid(uuid);
+        if (!user) {
+            std::cout << "User get failed: user not found" << std::endl;
+            write(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "user_not_found").c_str(),
+                  _protocol.err(ErrCode::BAD_REQUEST, "user_not_found").size());
+            return;
+        }
+        const std::string response = _protocol.ok({{"uuid", uuidToString(user->uuid)}, {"name", user->name}, {"logged_in", user->is_logged_in ? "1" : "0"}});
+        write(client_fd, response.c_str(), response.size());
+    }
 }
