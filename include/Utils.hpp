@@ -3,15 +3,12 @@
 
 #include "Types.hpp"
 
-namespace
+inline std::string uuidToString(const uuid_t &uuid)
 {
-    std::string uuidToString(const uuid_t &uuid)
-    {
-        char buffer[37] = {0};
+    char buffer[37] = {0};
 
-        uuid_unparse_lower(uuid, buffer);
-        return std::string(buffer);
-    }
+    uuid_unparse_lower(uuid, buffer);
+    return std::string(buffer);
 }
 
 

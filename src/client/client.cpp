@@ -186,9 +186,15 @@ std::map<std::string, std::string> Client::parse_payload(const std::string &payl
 
 int main(int argc, char *argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--help") {
+        std::cout << "USAGE: ./myteams_client ip port\n"
+                  << " ip is the server IPv4 address\n"
+                  << " port is the server port number" << std::endl;
+        return 0;
+    }
     if (argc != 3) {
         std::cerr << "Usage: " << argv[0] << " <server_ip> <port>\n";
-        return 1;
+        return 84;
     }
     std::string server_ip = argv[1];
     int port = atoi(argv[2]);

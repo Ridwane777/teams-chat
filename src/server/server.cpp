@@ -3,9 +3,8 @@
 volatile sig_atomic_t running = 1;
 
 void print_usage() {
-    std::cout << "USAGE: ./myftp port path\n" \
-                 " port is the port number on which the server socket listens\n" \
-                 " path is the path to the home directory for the Anonymous user" << std::endl;
+    std::cout << "USAGE: ./myteams_server port\n"
+                 " port is the port number on which the server socket listens" << std::endl;
 }
 
 void signalHandler(int signum)
@@ -64,8 +63,7 @@ int Server::accept_socket()
 
 void Server::handle_command(int client_fd, const std::string &command)
 {
-    (void)client_fd;
-    (void)command;
+    _command_handler.handle_command(client_fd, command);
 }
 
 void Server::process_client_data(int client_fd, const char *data, ssize_t len)
@@ -88,12 +86,14 @@ void Server::handle_client()
             if (clients[i].fd == sockfd) {
                 int new_fd = accept_socket();
                 clients.push_back({new_fd, POLLIN, 0});
+                _command_handler.register_client_fd(new_fd);
             } else {
                 char buffer[MAX];
                 bzero(buffer, sizeof(buffer));
                 ssize_t bytes_read = read(clients[i].fd, buffer, sizeof(buffer) - 1);
                 if (bytes_read <= 0) {
-                    // command_handler->remove_client_session(clients[i].fd);
+                    _command_handler.disconnect_client_session(clients[i].fd);
+                    _command_handler.unregister_client_fd(clients[i].fd);
                     client_buffers.erase(clients[i].fd);
                     close(clients[i].fd);
                     clients.erase(clients.begin() + i);
@@ -129,12 +129,12 @@ void Server::start(int port)
 
 int main(int argc, char *argv[])
 {
+    if (argc == 2 && std::string(argv[1]) == "--help") {
+        print_usage();
+        return 0;
+    }
     if (argc != 2)
         return 84;
-    if (std::string(argv[1]) == "--help") {
-        print_usage();
-        return 1;
-    }
     int port = atoi(argv[1]);
     Server server;
     server.start(port);

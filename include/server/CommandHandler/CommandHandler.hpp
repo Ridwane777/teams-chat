@@ -5,6 +5,8 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include <set>
+#include <functional>
 #include "../ServerState.hpp"
 #include "../../../include/server/protocol/Protocol.hpp"
 extern "C" {
@@ -14,19 +16,36 @@ extern "C" {
 
 using Function = std::function<void(int, Frame &)>;
 
+struct ClientContext {
+    std::string team;
+    std::string channel;
+    std::string thread;
+};
+
 class CommandHandler
 {
 private:
     ServerState _server_state;
     Protocol _protocol;
-    Frame _current_frame;
-    int client_fd;
     std::map<std::string, Function> commands;
+    std::map<int, ClientContext> _contexts;
+    std::set<int> _connected_clients;
+
+    void send_frame(int fd, const std::string &frame);
+    void broadcast_frame(const std::string &frame);
+    void broadcast_team_event(const uuid_t &team_uuid, const std::string &frame);
+    User *require_logged_user(int client_fd);
+    bool parse_uuid_field(const Frame &frame, const std::string &field_name, uuid_t &out_uuid,
+                          int client_fd, const std::string &missing_reason, const std::string &invalid_reason);
 
 public:
 
     CommandHandler();
     ~CommandHandler();
+
+    void register_client_fd(int fd);
+    void unregister_client_fd(int fd);
+    void disconnect_client_session(int fd);
 
     void handle_command(int client_fd, const std::string &command);
     void execute_command(int client_fd, Frame &frame);

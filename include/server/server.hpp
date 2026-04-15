@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <map>
+#include "CommandHandler/CommandHandler.hpp"
 #undef MAX
 #define MAX 4096
 #define PORT 8080
@@ -29,6 +30,7 @@ private:
     struct sockaddr_in servaddr, cli;
     std::vector<struct pollfd> clients;
     std::map<int, std::string> client_buffers;
+    CommandHandler _command_handler;
 
 public:
     Server();
