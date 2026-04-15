@@ -29,7 +29,7 @@ jobs:
           exit 1
         fi
 
-        if [ ! -x ./myteams_client ]; then
+        if [ ! -x ./myteams_cli ]; then
           echo "Missing or non-executable binary: myteams_client"
           ls -la
           exit 1
