@@ -43,6 +43,9 @@ public:
     CommandHandler();
     ~CommandHandler();
 
+    void save_state(const std::string &filepath);
+    void load_state(const std::string &filepath);
+
     void register_client_fd(int fd);
     void unregister_client_fd(int fd);
     void disconnect_client_session(int fd);

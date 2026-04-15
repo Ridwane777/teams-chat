@@ -331,3 +331,192 @@ bool ServerState::removeMessage(const uuid_t &uuid)
 {
     return _removeByUuid(_messages, uuid);
 }
+
+void ServerState::_writeString(std::ostream &os, const std::string &str) const
+{
+    size_t len = str.size();
+    os.write(reinterpret_cast<const char *>(&len), sizeof(len));
+    os.write(str.c_str(), len);
+}
+
+std::string ServerState::_readString(std::istream &is) const
+{
+    size_t len = 0;
+    if (!is.read(reinterpret_cast<char *>(&len), sizeof(len))) return "";
+    std::string str(len, '\0');
+    if (len > 0) is.read(&str[0], len);
+    return str;
+}
+
+int ServerState::save(const std::string &filepath) const
+{
+    std::ofstream os(filepath, std::ios::binary);
+    if (!os)
+        return -1;
+
+    size_t count;
+
+    count = _users.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &u : _users) {
+        os.write(reinterpret_cast<const char *>(u.uuid), sizeof(uuid_t));
+        _writeString(os, u.name);
+    }
+
+    count = _teams.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &t : _teams) {
+        os.write(reinterpret_cast<const char *>(t.uuid), sizeof(uuid_t));
+        _writeString(os, t.name);
+        _writeString(os, t.description);
+        os.write(reinterpret_cast<const char *>(t.creator_uuid), sizeof(uuid_t));
+    }
+
+    count = _subscriptions.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &s : _subscriptions) {
+        os.write(reinterpret_cast<const char *>(s.user_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(s.team_uuid), sizeof(uuid_t));
+    }
+
+    count = _channels.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &c : _channels) {
+        os.write(reinterpret_cast<const char *>(c.uuid), sizeof(uuid_t));
+        _writeString(os, c.name);
+        _writeString(os, c.description);
+        os.write(reinterpret_cast<const char *>(c.team_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(c.creator_uuid), sizeof(uuid_t));
+    }
+
+    count = _threads.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &t : _threads) {
+        os.write(reinterpret_cast<const char *>(t.uuid), sizeof(uuid_t));
+        _writeString(os, t.title);
+        _writeString(os, t.body);
+        os.write(reinterpret_cast<const char *>(t.channel_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(t.creator_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(&t.timestamp), sizeof(time_t));
+    }
+
+    count = _comments.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &c : _comments) {
+        os.write(reinterpret_cast<const char *>(c.uuid), sizeof(uuid_t));
+        _writeString(os, c.body);
+        os.write(reinterpret_cast<const char *>(c.thread_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(c.author_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(&c.timestamp), sizeof(time_t));
+    }
+
+    count = _messages.size();
+    os.write(reinterpret_cast<const char *>(&count), sizeof(count));
+    for (const auto &m : _messages) {
+        os.write(reinterpret_cast<const char *>(m.uuid), sizeof(uuid_t));
+        _writeString(os, m.body);
+        os.write(reinterpret_cast<const char *>(m.sender_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(m.receiver_uuid), sizeof(uuid_t));
+        os.write(reinterpret_cast<const char *>(&m.timestamp), sizeof(time_t));
+    }
+
+    return 0;
+}
+
+int ServerState::load(const std::string &filepath)
+{
+    std::ifstream is(filepath, std::ios::binary);
+    if (!is)
+        return -1;
+
+    size_t count;
+
+    _users.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            User u;
+            is.read(reinterpret_cast<char *>(u.uuid), sizeof(uuid_t));
+            u.name = _readString(is);
+            u.fd = -1;
+            u.is_logged_in = false;
+            _users.push_back(u);
+        }
+    }
+
+    _teams.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Team t;
+            is.read(reinterpret_cast<char *>(t.uuid), sizeof(uuid_t));
+            t.name = _readString(is);
+            t.description = _readString(is);
+            is.read(reinterpret_cast<char *>(t.creator_uuid), sizeof(uuid_t));
+            _teams.push_back(t);
+        }
+    }
+
+    _subscriptions.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Subscription s;
+            is.read(reinterpret_cast<char *>(s.user_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(s.team_uuid), sizeof(uuid_t));
+            _subscriptions.push_back(s);
+        }
+    }
+
+    _channels.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Channel c;
+            is.read(reinterpret_cast<char *>(c.uuid), sizeof(uuid_t));
+            c.name = _readString(is);
+            c.description = _readString(is);
+            is.read(reinterpret_cast<char *>(c.team_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(c.creator_uuid), sizeof(uuid_t));
+            _channels.push_back(c);
+        }
+    }
+
+    _threads.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Thread t;
+            is.read(reinterpret_cast<char *>(t.uuid), sizeof(uuid_t));
+            t.title = _readString(is);
+            t.body = _readString(is);
+            is.read(reinterpret_cast<char *>(t.channel_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(t.creator_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(&t.timestamp), sizeof(time_t));
+            _threads.push_back(t);
+        }
+    }
+
+    _comments.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Comment c;
+            is.read(reinterpret_cast<char *>(c.uuid), sizeof(uuid_t));
+            c.body = _readString(is);
+            is.read(reinterpret_cast<char *>(c.thread_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(c.author_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(&c.timestamp), sizeof(time_t));
+            _comments.push_back(c);
+        }
+    }
+
+    _messages.clear();
+    if (is.read(reinterpret_cast<char *>(&count), sizeof(count))) {
+        for (size_t i = 0; i < count; ++i) {
+            Message m;
+            is.read(reinterpret_cast<char *>(m.uuid), sizeof(uuid_t));
+            m.body = _readString(is);
+            is.read(reinterpret_cast<char *>(m.sender_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(m.receiver_uuid), sizeof(uuid_t));
+            is.read(reinterpret_cast<char *>(&m.timestamp), sizeof(time_t));
+            _messages.push_back(m);
+        }
+    }
+
+    return 0;
+}

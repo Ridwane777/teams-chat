@@ -3,6 +3,9 @@
 
 #include "../Entities.hpp"
 #include "../Utils.hpp"
+#include <fstream>
+#include <iostream>
+
 class ServerState
 {
 public:
@@ -69,8 +72,8 @@ public:
                                            const uuid_t &user_b);
     bool removeMessage(const uuid_t &uuid);
 
-    // int save(const std::string &filepath) const;
-    // int load(const std::string &filepath);
+    int save(const std::string &filepath) const;
+    int load(const std::string &filepath);
 
     std::vector<User> &users() { return _users; }
     std::vector<Team> &teams() { return _teams; }
@@ -93,6 +96,9 @@ private:
 
     template <typename T>
     bool _removeByUuid(std::vector<T> &vec, const uuid_t &uuid);
+
+    void _writeString(std::ostream &os, const std::string &str) const;
+    std::string _readString(std::istream &is) const;
 };
 
 #endif

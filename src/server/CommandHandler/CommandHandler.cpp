@@ -23,6 +23,16 @@ CommandHandler::CommandHandler()
 
 CommandHandler::~CommandHandler() = default;
 
+void CommandHandler::save_state(const std::string &filepath)
+{
+    _server_state.save(filepath);
+}
+
+void CommandHandler::load_state(const std::string &filepath)
+{
+    _server_state.load(filepath);
+}
+
 void CommandHandler::register_client_fd(int fd)
 {
     _connected_clients.insert(fd);

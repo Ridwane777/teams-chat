@@ -1,7 +1,7 @@
 CXX = clang++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -g3
 LDFLAGS = -L./libs/myteams -lmyteams -luuid -Wl,-rpath,./libs/myteams
-CLIENT_TARGET = myteams_client
+CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
 BIN             = unit_tests
 CRITERION       = -lcriterion

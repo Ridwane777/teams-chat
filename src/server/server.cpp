@@ -1,4 +1,5 @@
 #include "../../include/server/server.hpp"
+#include <cerrno>
 
 volatile sig_atomic_t running = 1;
 
@@ -9,8 +10,8 @@ void print_usage() {
 
 void signalHandler(int signum)
 {
-    printf("Interrupt signal (%d) received. Shutting down the server...\n", signum);
-    exit(signum);
+    printf("\nInterrupt signal (%d) received. Shutting down the server...\n", signum);
+    running = 0;
 }
 
 Server::Server()
@@ -111,6 +112,8 @@ void Server::start(int port)
     signal(SIGINT, signalHandler);
     signal(SIGCHLD, SIG_IGN);
 
+    _command_handler.load_state("myteams.dat");
+
     create_socket();
     clients.push_back({sockfd, POLLIN, 0});
     int opt = 1;
@@ -120,11 +123,15 @@ void Server::start(int port)
     while (running) {
         int ready = poll(clients.data(), clients.size(), -1);
         if (ready < 0) {
+            if (errno == EINTR)
+                continue;
             std::cout << "poll failed" << std::endl;
             exit(84);
         }
         handle_client();
     }
+    
+    _command_handler.save_state("myteams.dat");
 }
 
 int main(int argc, char *argv[])
