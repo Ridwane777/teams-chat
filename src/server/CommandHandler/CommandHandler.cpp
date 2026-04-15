@@ -10,15 +10,15 @@ CommandHandler::CommandHandler()
     commands["SND"] = [this](int fd, Frame &f) { handle_msg_send(fd, f); };
     commands["MLS"] = [this](int fd, Frame &f) { handle_msg_list(fd, f); };
     commands["TCR"] = [this](int fd, Frame &f) { handle_team_create(fd, f); };
-    commands["CCR"] = [this](int fd, Frame &f) { handle_chan_create(fd, f); };
-    commands["HCR"] = [this](int fd, Frame &f) { handle_thread_create(fd, f); };
-    commands["OCR"] = [this](int fd, Frame &f) { handle_comment_create(fd, f); };
-    commands["USE"] = [this](int fd, Frame &f) { handle_use(fd, f); };
     commands["TSB"] = [this](int fd, Frame &f) { handle_team_sub(fd, f); };
     commands["TUS"] = [this](int fd, Frame &f) { handle_team_unsub(fd, f); };
     commands["TSD"] = [this](int fd, Frame &f) { handle_team_subbed(fd, f); };
+    commands["CCR"] = [this](int fd, Frame &f) { handle_chan_create(fd, f); };
+    commands["HCR"] = [this](int fd, Frame &f) { handle_thread_create(fd, f); };
+    commands["OCR"] = [this](int fd, Frame &f) { handle_comment_create(fd, f); };
     commands["LST"] = [this](int fd, Frame &f) { handle_list(fd, f); };
     commands["INF"] = [this](int fd, Frame &f) { handle_info(fd, f); };
+    commands["USE"] = [this](int fd, Frame &f) { handle_use(fd, f); };
 }
 
 CommandHandler::~CommandHandler() = default;
