@@ -56,9 +56,7 @@ int Server::accept_socket()
         std::cout << "server accept failed..." << std::endl;
         return -1;
     }
-    std::cout << "<- 220 Service ready for new user." << std::endl;
-    const char *welcome_msg = "220 Service ready for new user.\r\n";
-    write(connfd, welcome_msg, strlen(welcome_msg));
+    std::cout << "<- New connection accepted." << std::endl;
     return connfd;
 }
 

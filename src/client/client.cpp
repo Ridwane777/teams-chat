@@ -4,7 +4,6 @@
 
 #include <sstream>
 #include <stdexcept>
-
 extern "C" {
 #include "../../libs/myteams/logging_client.h"
 }

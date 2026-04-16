@@ -440,6 +440,7 @@ int ServerState::load(const std::string &filepath)
             u.fd = -1;
             u.is_logged_in = false;
             _users.push_back(u);
+            server_event_user_loaded(uuidToString(u.uuid).c_str(), u.name.c_str());
         }
     }
 

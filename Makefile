@@ -1,6 +1,6 @@
 CXX = clang++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -g3
-LDFLAGS = -L./libs/myteams -lmyteams -luuid -Wl,-rpath,./libs/myteams
+LDFLAGS = -luuid -L./libs/myteams -lmyteams -Wl,-rpath,./libs/myteams
 CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
 BIN             = unit_tests
@@ -30,7 +30,6 @@ $(TARGET): $(SERVEROBJECTS)
 $(CLIENT_TARGET): $(CLIENTOBJECTS)
 	@echo "$(GREEN)[LINKING]$(RESET) $@"
 	$(CXX) $(CXXFLAGS) -o $(CLIENT_TARGET) $(CLIENTOBJECTS) $(LDFLAGS)
-
 	mkdir -p obj/client
 	mv $(CLIENTOBJECTS) obj/client/
 

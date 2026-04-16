@@ -1,6 +1,5 @@
 #include "../../include/client/ClientCommand.hpp"
-#include <sstream>
-#include <algorithm>
+#include "../../include/client/ResponseHandler.hpp"
 #include <unistd.h>
 #include <cstring>
 
@@ -112,6 +111,7 @@ void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /login [\"user_name\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/login");
     std::string msg = "LOG name=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -119,6 +119,7 @@ void UserCommand::handleLogin(int fd, const std::vector<std::string> &args)
 void UserCommand::handleLogout(int fd, const std::vector<std::string> &args)
 {
     (void)args;
+    ResponseHandler::setPendingCommand("/logout");
     std::string msg = "OUT\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -126,6 +127,7 @@ void UserCommand::handleLogout(int fd, const std::vector<std::string> &args)
 void UserCommand::handleUsers(int fd, const std::vector<std::string> &args)
 {
     (void)args;
+    ResponseHandler::setPendingCommand("/users");
     std::string msg = "ULS\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -136,6 +138,7 @@ void UserCommand::handleUser(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /user [\"user_uuid\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/user");
     std::string msg = "UGT uuid=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -146,6 +149,7 @@ void UserCommand::handleSend(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /send [\"user_uuid\"] [\"message_body\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/send");
     std::string msg = "SND to=" + Client::url_encode(args[0]) + " body=" + Client::url_encode(args[1]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -156,6 +160,7 @@ void UserCommand::handleMessages(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /messages [\"user_uuid\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/messages");
     std::string msg = "MLS with=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -166,6 +171,7 @@ void UserCommand::handleSubscribe(int fd, const std::vector<std::string> &args)
         std::cout << "Usage: /subscribe [\"team_uuid\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/subscribe");
     std::string msg = "TSB team=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -173,8 +179,12 @@ void UserCommand::handleSubscribe(int fd, const std::vector<std::string> &args)
 void UserCommand::handleSubscribed(int fd, const std::vector<std::string> &args)
 {
     std::string msg = "TSD";
-    if (args.size() == 1)
+    if (args.size() == 1) {
+        ResponseHandler::setPendingCommand("/subscribed_users");
         msg += " team=" + Client::url_encode(args[0]);
+    } else {
+        ResponseHandler::setPendingCommand("/subscribed_teams");
+    }
     msg += "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -185,6 +195,7 @@ void UserCommand::handleUnsubscribe(int fd, const std::vector<std::string> &args
         std::cout << "Usage: /unsubscribe [\"team_uuid\"]" << std::endl;
         return;
     }
+    ResponseHandler::setPendingCommand("/unsubscribe");
     std::string msg = "TUS team=" + Client::url_encode(args[0]) + "\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -221,28 +232,32 @@ void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
 {
     std::string msg;
     if (_teamUuid.empty()) {
-        if (args.size() != 2) { 
-            std::cout << "Usage: /create \"team_name\" \"team_desc\"" << std::endl; 
+        if (args.size() != 2) {
+            std::cout << "Usage: /create \"team_name\" \"team_desc\"" << std::endl;
             return;
         }
+        ResponseHandler::setPendingCommand("/create_team");
         msg = "TCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
     } else if (_channelUuid.empty()) {
         if (args.size() != 2) {
             std::cout << "Usage: /create \"channel_name\" \"channel_desc\"" << std::endl;
             return;
         }
+        ResponseHandler::setPendingCommand("/create_channel");
         msg = "CCR name=" + Client::url_encode(args[0]) + " description=" + Client::url_encode(args[1]);
     } else if (_threadUuid.empty()) {
         if (args.size() != 2) {
             std::cout << "Usage: /create \"thread_title\" \"thread_body\"" << std::endl;
             return;
         }
+        ResponseHandler::setPendingCommand("/create_thread");
         msg = "HCR title=" + Client::url_encode(args[0]) + " body=" + Client::url_encode(args[1]);
     } else {
         if (args.size() != 1) {
             std::cout << "Usage: /create \"comment_body\"" << std::endl;
             return;
         }
+        ResponseHandler::setPendingCommand("/create_reply");
         msg = "OCR body=" + Client::url_encode(args[0]);
     }
     msg += "\n";
@@ -252,6 +267,14 @@ void UserCommand::handleCreate(int fd, const std::vector<std::string> &args)
 void UserCommand::handleList(int fd, const std::vector<std::string> &args)
 {
     (void)args;
+    if (_teamUuid.empty())
+        ResponseHandler::setPendingCommand("/list_teams");
+    else if (_channelUuid.empty())
+        ResponseHandler::setPendingCommand("/list_channels");
+    else if (_threadUuid.empty())
+        ResponseHandler::setPendingCommand("/list_threads");
+    else
+        ResponseHandler::setPendingCommand("/list_replies");
     std::string msg = "LST\n";
     write(fd, msg.c_str(), msg.size());
 }
@@ -259,6 +282,14 @@ void UserCommand::handleList(int fd, const std::vector<std::string> &args)
 void UserCommand::handleInfo(int fd, const std::vector<std::string> &args)
 {
     (void)args;
+    if (_teamUuid.empty())
+        ResponseHandler::setPendingCommand("/info_user");
+    else if (_channelUuid.empty())
+        ResponseHandler::setPendingCommand("/info_team");
+    else if (_threadUuid.empty())
+        ResponseHandler::setPendingCommand("/info_channel");
+    else
+        ResponseHandler::setPendingCommand("/info_thread");
     std::string msg = "INF\n";
     write(fd, msg.c_str(), msg.size());
 }
