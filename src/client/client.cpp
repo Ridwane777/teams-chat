@@ -109,11 +109,12 @@ void Client::run()
 
 void Client::handle_response(const std::string &response)
 {
-    if (response.size() < 3)
+    if (response.empty())
         return;
 
-    std::string opcode = response.substr(0, 3);
-    std::string payload = (response.size() > 4) ? response.substr(4) : "";
+    size_t spacePos = response.find(' ');
+    std::string opcode = (spacePos == std::string::npos) ? response : response.substr(0, spacePos);
+    std::string payload = (spacePos == std::string::npos) ? "" : response.substr(spacePos + 1);
 
     try {
         std::map<std::string, std::string> fields = parse_payload(payload);
