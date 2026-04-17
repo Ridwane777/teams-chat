@@ -29,3 +29,9 @@ src/server/*~
 src/client/*~
 src/client/*.d
 src/client/*.o
+
+# Tests / coverage (local)
+.venv/
+unit_tests
+*.gcda
+*.gcno
