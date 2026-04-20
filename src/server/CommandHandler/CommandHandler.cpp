@@ -111,7 +111,6 @@ void CommandHandler::handle_command(int client_fd, const std::string &command)
         send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "invalid_command"));
         return;
     }
-
     execute_command(client_fd, *frame);
 }
 
@@ -123,7 +122,7 @@ void CommandHandler::execute_command(int client_fd, Frame &frame)
         send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "unknown_command"));
         return;
     }
-    if (frame.opcode != ClientOp::LOGIN && !require_logged_user(client_fd))
+    if (frame.opcode != std::string(ClientOp::LOGIN) && !require_logged_user(client_fd))
         return;
     cmd->second(client_fd, frame);
 }
@@ -131,7 +130,6 @@ void CommandHandler::execute_command(int client_fd, Frame &frame)
 void CommandHandler::handle_login(int client_fd, Frame &frame)
 {
     std::string name = frame.get("name");
-
     if (name.empty() || name.size() > 32) {
         send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "invalid_name"));
         return;
