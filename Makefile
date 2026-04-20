@@ -1,33 +1,15 @@
 CXX = clang++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -g3
-LDFLAGS = -luuid -L./libs/myteams -lmyteams -Wl,-rpath,./libs/myteams
+LDFLAGS = -luuid -lmyteams -Wl
 CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
 BIN             = unit_tests
+CRITERION       = -lcriterion
 COVFLAGS        = --coverage
-GCOVR = .venv/bin/gcovr
 SERVER_SOURCES = src/server/server.cpp src/server/protocol/Protocol.cpp src/server/CommandHandler/CommandHandler.cpp src/server/ServerState.cpp src/Entities.cpp
 CLIENT_SOURCES = src/client/client.cpp src/client/ClientCommand.cpp src/client/ResponseHandler.cpp
 SERVEROBJECTS = $(SERVER_SOURCES:.cpp=.o)
 CLIENTOBJECTS = $(CLIENT_SOURCES:.cpp=.o)
-TEST_SOURCES = \
-	tests/test_main.cpp \
-	tests/test_protocol.cpp \
-	tests/test_server_state.cpp \
-	tests/test_entities.cpp \
-	tests/test_client_command.cpp \
-	tests/test_response_handler.cpp \
-	tests/test_command_handler.cpp \
-	tests/stubs_logging.cpp
-TEST_OBJECTS = $(TEST_SOURCES:.cpp=.o)
-TESTED_SOURCES = \
-	src/client/ClientCommand.cpp \
-	src/client/ResponseHandler.cpp \
-	src/server/protocol/Protocol.cpp \
-	src/server/ServerState.cpp \
-	src/server/CommandHandler/CommandHandler.cpp \
-	src/Entities.cpp
-LIB_OBJECTS = $(TESTED_SOURCES:.cpp=.o)
 
 all: $(TARGET) $(CLIENT_TARGET)
 
@@ -63,20 +45,13 @@ $(BIN): CXXFLAGS += $(COVFLAGS)
 
 $(BIN): $(LIB_OBJECTS) $(TEST_OBJECTS)
 	@echo "$(GREEN)[LINKING TESTS]$(RESET) $@"
-	$(CXX) $(CXXFLAGS) $(COVFLAGS) -o $(BIN) $(LIB_OBJECTS) $(TEST_OBJECTS)
+	$(CXX) $(CXXFLAGS) $(COVFLAGS) -o $(BIN) $(LIB_OBJECTS) $(TEST_OBJECTS) $(CRITERION)
 
 tests_run: clean $(BIN)
 	./$(BIN) --verbose
 
 coverage: tests_run
-	$(GCOVR) --gcov-executable "llvm-cov gcov" \
-		--filter "src/client/ClientCommand.cpp" \
-		--filter "src/client/ResponseHandler.cpp" \
-		--filter "src/server/protocol/Protocol.cpp" \
-		--filter "src/server/ServerState.cpp" \
-		--filter "src/server/CommandHandler/CommandHandler.cpp" \
-		--filter "src/Entities.cpp" \
-		--print-summary
+	gcovr --gcov-executable "llvm-cov gcov" --exclude tests/
 
 clean:
 	rm -f $(SERVEROBJECTS)
