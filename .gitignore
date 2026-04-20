@@ -23,27 +23,10 @@ myteams_server
 file/
 obj/
 
-src/*.o
-src/*.d
-src/*~
-src/server/*.o
-src/server/*.d
-src/server/*~
-src/server/CommandHandler/*.o
-src/server/CommandHandler/*.d
-src/server/CommandHandler/*~
-src/server/protocol/*.o
-src/server/protocol/*.d
-src/server/protocol/*~
-src/client/*~
-src/client/*.d
-src/client/*.o
-
-tests/*~
-tests/*.d
-tests/*.o
-tests/*.gcda
-tests/*.gcno
+# Ignore object files and dependency files
+*.o
+*.d
+*~
 
 # Tests / coverage (local)
 .venv/
