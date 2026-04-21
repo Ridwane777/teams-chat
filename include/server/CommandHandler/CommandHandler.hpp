@@ -49,6 +49,7 @@ public:
     void register_client_fd(int fd);
     void unregister_client_fd(int fd);
     void disconnect_client_session(int fd);
+    void handle_logout_all_clients();
 
     void handle_command(int client_fd, const std::string &command);
     void execute_command(int client_fd, Frame &frame);

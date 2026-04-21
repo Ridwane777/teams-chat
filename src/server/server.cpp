@@ -12,8 +12,10 @@ void print_usage() {
 void Server::signalHandler(int signum)
 {
     std::cout << "\nInterrupt signal (" << signum << ") received. Shutting down the server...\n";
-    if (Server::instance != nullptr)
+    if (Server::instance != nullptr) {
         Server::instance->_command_handler.save_state("myteams.dat");
+        Server::instance->_command_handler.handle_logout_all_clients();
+    }
     exit(0);
 }
 

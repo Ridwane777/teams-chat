@@ -104,6 +104,22 @@ void CommandHandler::disconnect_client_session(int fd)
     broadcast_frame(_protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
 }
 
+void CommandHandler::handle_logout_all_clients()
+{
+    for (int fd : _connected_clients) {
+        User *u = _server_state.findUserByFd(fd);
+        if (!u || !u->is_logged_in)
+            continue;
+
+        std::string user_uuid = uuidToString(u->uuid);
+        std::string user_name = u->name;
+        u->is_logged_in = false;
+        u->fd = -1;
+        server_event_user_logged_out(user_uuid.c_str());
+        broadcast_frame(_protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
+    }
+}
+
 void CommandHandler::handle_command(int client_fd, const std::string &command)
 {
     auto frame = _protocol.parse(command);
