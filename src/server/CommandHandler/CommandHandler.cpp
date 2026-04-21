@@ -145,35 +145,47 @@ void CommandHandler::execute_command(int client_fd, Frame &frame)
 
 void CommandHandler::handle_login(int client_fd, Frame &frame)
 {
-    std::string name = frame.get("name");
-    if (name.empty() || name.size() > 32) {
-        send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "invalid_name"));
-        return;
-    }
-
-    User *active_on_fd = _server_state.findUserByFd(client_fd);
-    if (active_on_fd && active_on_fd->is_logged_in) {
+    User *self = require_logged_user(client_fd);
+    if (self && self->is_logged_in) {
         send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
         return;
     }
 
+    std::string name = frame.get("name");
+    if (!_validate_login_name(name, client_fd))
+        return;
+
     User *existing_user = _server_state.findUserByName(name);
-    if (existing_user) {
-        if (existing_user->is_logged_in) {
-            send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
-            return;
-        }
-        existing_user->fd = client_fd;
-        existing_user->is_logged_in = true;
-        server_event_user_logged_in(uuidToString(existing_user->uuid).c_str());
-        send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(existing_user->uuid)},
-                                            {"name", existing_user->name},
-                                            {"logged_in", "1"}}));
-        broadcast_frame(_protocol.evt(EventType::USER_ONLINE,
-                                      {{"uuid", uuidToString(existing_user->uuid)}, {"name", existing_user->name}}));
+    if (existing_user)
+        _login_existing_user(existing_user, client_fd);
+    else
+        _login_new_user(name, client_fd);
+}
+
+bool CommandHandler::_validate_login_name(const std::string &name, int client_fd)
+{
+    if (name.empty() || name.size() > 32) {
+        send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "invalid_name"));
+        return false;
+    }
+    return true;
+}
+
+void CommandHandler::_login_existing_user(User *user, int client_fd)
+{
+    if (user->is_logged_in) {
+        send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
         return;
     }
+    user->fd = client_fd;
+    user->is_logged_in = true;
+    server_event_user_logged_in(uuidToString(user->uuid).c_str());
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(user->uuid)}, {"name", user->name}, {"logged_in", "1"}}));
+    broadcast_frame(_protocol.evt(EventType::USER_ONLINE, {{"uuid", uuidToString(user->uuid)}, {"name", user->name}}));
+}
 
+void CommandHandler::_login_new_user(const std::string &name, int client_fd)
+{
     User &new_user = _server_state.createUser(name, client_fd);
     new_user.is_logged_in = true;
     std::string user_uuid = uuidToString(new_user.uuid);
@@ -230,21 +242,12 @@ void CommandHandler::handle_user_get(int client_fd, Frame &frame)
 void CommandHandler::handle_msg_send(int client_fd, Frame &frame)
 {
     User *sender = require_logged_user(client_fd);
-    uuid_t recipient_uuid;
-    std::string body = frame.get("body");
-
     if (!sender)
         return;
-    if (!parse_uuid_field(frame, "to", recipient_uuid, client_fd, "missing_to", "invalid_uuid"))
+
+    uuid_t recipient_uuid;
+    if (!_validate_message(frame, sender, client_fd, recipient_uuid))
         return;
-    if (body.empty() || body.size() > 512) {
-        send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "body_too_long"));
-        return;
-    }
-    if (uuid_compare(sender->uuid, recipient_uuid) == 0) {
-        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "cannot_message_self"));
-        return;
-    }
 
     User *recipient = _server_state.findUserByUuid(recipient_uuid);
     if (!recipient) {
@@ -252,13 +255,33 @@ void CommandHandler::handle_msg_send(int client_fd, Frame &frame)
         return;
     }
 
-    Message &message = _server_state.createMessage(body, sender->uuid, recipient_uuid);
-    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(message.uuid)},
-                                        {"timestamp", std::to_string(message.timestamp)}}));
+    Message &message = _server_state.createMessage(frame.get("body"), sender->uuid, recipient_uuid);
+    _send_message(message, recipient, sender, client_fd);
+}
+
+bool CommandHandler::_validate_message(const Frame &frame, User *sender, int client_fd, uuid_t &recipient_uuid)
+{
+    if (!parse_uuid_field(frame, "to", recipient_uuid, client_fd, "missing_to", "invalid_uuid"))
+        return false;
+    std::string body = frame.get("body");
+    if (body.empty() || body.size() > 512) {
+        send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "body_too_long"));
+        return false;
+    }
+    if (uuid_compare(sender->uuid, recipient_uuid) == 0) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "cannot_message_self"));
+        return false;
+    }
+    return true;
+}
+
+void CommandHandler::_send_message(Message &message, User *recipient, User *sender, int client_fd)
+{
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(message.uuid)}, {"timestamp", std::to_string(message.timestamp)}}));
     if (recipient->is_logged_in && recipient->fd >= 0) {
         send_frame(recipient->fd, _protocol.evt(EventType::MSG_RECEIVED,
                                                 {{"from", uuidToString(sender->uuid)},
-                                                 {"to", uuidToString(recipient_uuid)},
+                                                 {"to", uuidToString(recipient->uuid)},
                                                  {"body", message.body},
                                                  {"timestamp", std::to_string(message.timestamp)}}));
     }
@@ -294,11 +317,10 @@ void CommandHandler::handle_msg_list(int client_fd, Frame &frame)
 void CommandHandler::handle_team_create(int client_fd, Frame &frame)
 {
     User *self = require_logged_user(client_fd);
-    std::string name = frame.get("name");
-    std::string description = frame.get("description");
-
     if (!self)
         return;
+
+    std::string name = frame.get("name");
     if (name.empty() || name.size() > 32) {
         send_frame(client_fd, _protocol.err(ErrCode::BAD_REQUEST, "name_too_long"));
         return;
@@ -308,19 +330,14 @@ void CommandHandler::handle_team_create(int client_fd, Frame &frame)
         return;
     }
 
-    Team &team = _server_state.createTeam(name, description, self->uuid);
+    Team &team = _server_state.createTeam(name, frame.get("description"), self->uuid);
     if (!_server_state.subscriptionExists(self->uuid, team.uuid))
         _server_state.createSubscription(self->uuid, team.uuid);
 
-    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(team.uuid)},
-                                        {"name", team.name},
-                                        {"description", team.description},
-                                        {"creator", uuidToString(team.creator_uuid)}}));
-    broadcast_frame(_protocol.evt(EventType::TEAM_CREATED,
-                                  {{"uuid", uuidToString(team.uuid)},
-                                   {"name", team.name},
-                                   {"description", team.description},
-                                   {"creator", uuidToString(team.creator_uuid)}}));
+    std::string team_uuid = uuidToString(team.uuid);
+    std::string creator_uuid = uuidToString(team.creator_uuid);
+    send_frame(client_fd, _protocol.ok({{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
+    broadcast_frame(_protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
 }
 
 void CommandHandler::handle_team_sub(int client_fd, Frame &frame)
@@ -407,11 +424,10 @@ void CommandHandler::handle_team_subbed(int client_fd, Frame &frame)
 void CommandHandler::handle_use(int client_fd, Frame &frame)
 {
     User *self = require_logged_user(client_fd);
-    ClientContext next;
-
     if (!self)
         return;
-
+    
+    ClientContext next;
     if (!frame.has("team") && !frame.has("channel") && !frame.has("thread")) {
         _contexts[client_fd] = next;
         send_frame(client_fd, _protocol.ok({{"team", "-"}, {"channel", "-"}, {"thread", "-"}}));
@@ -422,45 +438,60 @@ void CommandHandler::handle_use(int client_fd, Frame &frame)
         return;
     }
 
-    if (frame.has("team")) {
-        uuid_t team_uuid;
-        if (uuid_parse(frame.get("team").c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "team_not_found"));
-            return;
-        }
-        next.team = frame.get("team");
-    }
-    if (frame.has("channel")) {
-        uuid_t channel_uuid;
-        if (uuid_parse(frame.get("channel").c_str(), channel_uuid) != 0) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "channel_not_found"));
-            return;
-        }
-        Channel *channel = _server_state.findChannelByUuid(channel_uuid);
-        if (!channel || uuidToString(channel->team_uuid) != next.team) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "channel_not_found"));
-            return;
-        }
-        next.channel = frame.get("channel");
-    }
-    if (frame.has("thread")) {
-        uuid_t thread_uuid;
-        if (uuid_parse(frame.get("thread").c_str(), thread_uuid) != 0) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "thread_not_found"));
-            return;
-        }
-        Thread *thread = _server_state.findThreadByUuid(thread_uuid);
-        if (!thread || uuidToString(thread->channel_uuid) != next.channel) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "thread_not_found"));
-            return;
-        }
-        next.thread = frame.get("thread");
-    }
+    if (frame.has("team") && !_validate_use_team(frame.get("team"), next.team, client_fd))
+        return;
+    if (frame.has("channel") && !_validate_use_channel(next.team, frame.get("channel"), next.channel, client_fd))
+        return;
+    if (frame.has("thread") && !_validate_use_thread(next.channel, frame.get("thread"), next.thread, client_fd))
+        return;
 
     _contexts[client_fd] = next;
     send_frame(client_fd, _protocol.ok({{"team", next.team.empty() ? "-" : next.team},
                                         {"channel", next.channel.empty() ? "-" : next.channel},
                                         {"thread", next.thread.empty() ? "-" : next.thread}}));
+}
+
+bool CommandHandler::_validate_use_team(const std::string &team_str, std::string &out_team, int client_fd)
+{
+    uuid_t team_uuid;
+    if (uuid_parse(team_str.c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "team_not_found"));
+        return false;
+    }
+    out_team = team_str;
+    return true;
+}
+
+bool CommandHandler::_validate_use_channel(const std::string &team_str, const std::string &chan_str, std::string &out_chan, int client_fd)
+{
+    uuid_t channel_uuid;
+    if (uuid_parse(chan_str.c_str(), channel_uuid) != 0) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "channel_not_found"));
+        return false;
+    }
+    Channel *channel = _server_state.findChannelByUuid(channel_uuid);
+    if (!channel || uuidToString(channel->team_uuid) != team_str) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "channel_not_found"));
+        return false;
+    }
+    out_chan = chan_str;
+    return true;
+}
+
+bool CommandHandler::_validate_use_thread(const std::string &chan_str, const std::string &thread_str, std::string &out_thread, int client_fd)
+{
+    uuid_t thread_uuid;
+    if (uuid_parse(thread_str.c_str(), thread_uuid) != 0) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "thread_not_found"));
+        return false;
+    }
+    Thread *thread = _server_state.findThreadByUuid(thread_uuid);
+    if (!thread || uuidToString(thread->channel_uuid) != chan_str) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "thread_not_found"));
+        return false;
+    }
+    out_thread = thread_str;
+    return true;
 }
 
 void CommandHandler::handle_chan_create(int client_fd, Frame &frame)
@@ -586,63 +617,70 @@ void CommandHandler::handle_list(int client_fd, Frame &frame)
 {
     (void)frame;
     User *self = require_logged_user(client_fd);
-    ClientContext &ctx = _contexts[client_fd];
-    std::string response;
-
     if (!self)
         return;
 
-    if (ctx.team.empty()) {
-        for (Team &team : _server_state.teams())
-            response += _protocol.ok({{"uuid", uuidToString(team.uuid)}, {"name", team.name}, {"description", team.description}});
-        response += _protocol.ok({{"count", std::to_string(_server_state.teams().size())}});
-        send_frame(client_fd, response);
-        return;
-    }
-    if (ctx.channel.empty()) {
-        uuid_t team_uuid;
-        if (uuid_parse(ctx.team.c_str(), team_uuid) != 0) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
-            return;
-        }
-        std::vector<Channel *> channels = _server_state.getTeamChannels(team_uuid);
-        for (Channel *ch : channels)
-            response += _protocol.ok({{"uuid", uuidToString(ch->uuid)}, {"name", ch->name}, {"description", ch->description}, {"team", uuidToString(ch->team_uuid)}});
-        response += _protocol.ok({{"count", std::to_string(channels.size())}});
-        send_frame(client_fd, response);
-        return;
-    }
-    if (ctx.thread.empty()) {
-        uuid_t channel_uuid;
-        if (uuid_parse(ctx.channel.c_str(), channel_uuid) != 0) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
-            return;
-        }
-        std::vector<Thread *> threads = _server_state.getChannelThreads(channel_uuid);
-        for (Thread *th : threads)
-            response += _protocol.ok({{"uuid", uuidToString(th->uuid)},
-                                      {"title", th->title},
-                                      {"body", th->body},
-                                      {"channel", uuidToString(th->channel_uuid)},
-                                      {"creator", uuidToString(th->creator_uuid)},
-                                      {"timestamp", std::to_string(th->timestamp)}});
-        response += _protocol.ok({{"count", std::to_string(threads.size())}});
-        send_frame(client_fd, response);
-        return;
-    }
+    ClientContext &ctx = _contexts[client_fd];
+    if (ctx.team.empty())
+        _list_teams(client_fd);
+    else if (ctx.channel.empty())
+        _list_channels(client_fd, ctx.team);
+    else if (ctx.thread.empty())
+        _list_threads(client_fd, ctx.channel);
+    else
+        _list_comments(client_fd, ctx.thread);
+}
 
-    uuid_t thread_uuid;
-    if (uuid_parse(ctx.thread.c_str(), thread_uuid) != 0) {
+void CommandHandler::_list_teams(int client_fd)
+{
+    std::string response;
+    for (Team &team : _server_state.teams())
+        response += _protocol.ok({{"uuid", uuidToString(team.uuid)}, {"name", team.name}, {"description", team.description}});
+    response += _protocol.ok({{"count", std::to_string(_server_state.teams().size())}});
+    send_frame(client_fd, response);
+}
+
+void CommandHandler::_list_channels(int client_fd, const std::string &team_str)
+{
+    uuid_t team_uuid;
+    if (uuid_parse(team_str.c_str(), team_uuid) != 0) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
         return;
     }
+    std::string response;
+    std::vector<Channel *> channels = _server_state.getTeamChannels(team_uuid);
+    for (Channel *ch : channels)
+        response += _protocol.ok({{"uuid", uuidToString(ch->uuid)}, {"name", ch->name}, {"description", ch->description}, {"team", uuidToString(ch->team_uuid)}});
+    response += _protocol.ok({{"count", std::to_string(channels.size())}});
+    send_frame(client_fd, response);
+}
+
+void CommandHandler::_list_threads(int client_fd, const std::string &channel_str)
+{
+    uuid_t channel_uuid;
+    if (uuid_parse(channel_str.c_str(), channel_uuid) != 0) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    std::string response;
+    std::vector<Thread *> threads = _server_state.getChannelThreads(channel_uuid);
+    for (Thread *th : threads)
+        response += _protocol.ok({{"uuid", uuidToString(th->uuid)}, {"title", th->title}, {"body", th->body}, {"channel", uuidToString(th->channel_uuid)}, {"creator", uuidToString(th->creator_uuid)}, {"timestamp", std::to_string(th->timestamp)}});
+    response += _protocol.ok({{"count", std::to_string(threads.size())}});
+    send_frame(client_fd, response);
+}
+
+void CommandHandler::_list_comments(int client_fd, const std::string &thread_str)
+{
+    uuid_t thread_uuid;
+    if (uuid_parse(thread_str.c_str(), thread_uuid) != 0) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    std::string response;
     std::vector<Comment *> comments = _server_state.getThreadComments(thread_uuid);
     for (Comment *co : comments)
-        response += _protocol.ok({{"uuid", uuidToString(co->uuid)},
-                                  {"body", co->body},
-                                  {"thread", uuidToString(co->thread_uuid)},
-                                  {"author", uuidToString(co->author_uuid)},
-                                  {"timestamp", std::to_string(co->timestamp)}});
+        response += _protocol.ok({{"uuid", uuidToString(co->uuid)}, {"body", co->body}, {"thread", uuidToString(co->thread_uuid)}, {"author", uuidToString(co->author_uuid)}, {"timestamp", std::to_string(co->timestamp)}});
     response += _protocol.ok({{"count", std::to_string(comments.size())}});
     send_frame(client_fd, response);
 }
@@ -651,52 +689,54 @@ void CommandHandler::handle_info(int client_fd, Frame &frame)
 {
     (void)frame;
     User *self = require_logged_user(client_fd);
-    ClientContext &ctx = _contexts[client_fd];
-
     if (!self)
         return;
 
-    if (ctx.team.empty()) {
-        send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(self->uuid)}, {"name", self->name}, {"logged_in", self->is_logged_in ? "1" : "0"}}));
-        return;
-    }
-    if (ctx.channel.empty()) {
-        uuid_t team_uuid;
-        if (uuid_parse(ctx.team.c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
-            return;
-        }
-        Team *team = _server_state.findTeamByUuid(team_uuid);
-        send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(team->uuid)},
-                                            {"name", team->name},
-                                            {"description", team->description},
-                                            {"creator", uuidToString(team->creator_uuid)}}));
-        return;
-    }
-    if (ctx.thread.empty()) {
-        uuid_t channel_uuid;
-        if (uuid_parse(ctx.channel.c_str(), channel_uuid) != 0 || !_server_state.findChannelByUuid(channel_uuid)) {
-            send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
-            return;
-        }
-        Channel *channel = _server_state.findChannelByUuid(channel_uuid);
-        send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(channel->uuid)},
-                                            {"name", channel->name},
-                                            {"description", channel->description},
-                                            {"team", uuidToString(channel->team_uuid)}}));
-        return;
-    }
+    ClientContext &ctx = _contexts[client_fd];
+    if (ctx.team.empty())
+        _info_self(client_fd, self);
+    else if (ctx.channel.empty())
+        _info_team(client_fd, ctx.team);
+    else if (ctx.thread.empty())
+        _info_channel(client_fd, ctx.channel);
+    else
+        _info_thread(client_fd, ctx.thread);
+}
 
+void CommandHandler::_info_self(int client_fd, User *self)
+{
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(self->uuid)}, {"name", self->name}, {"logged_in", self->is_logged_in ? "1" : "0"}}));
+}
+
+void CommandHandler::_info_team(int client_fd, const std::string &team_str)
+{
+    uuid_t team_uuid;
+    if (uuid_parse(team_str.c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    Team *team = _server_state.findTeamByUuid(team_uuid);
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(team->uuid)}, {"name", team->name}, {"description", team->description}, {"creator", uuidToString(team->creator_uuid)}}));
+}
+
+void CommandHandler::_info_channel(int client_fd, const std::string &chan_str)
+{
+    uuid_t channel_uuid;
+    if (uuid_parse(chan_str.c_str(), channel_uuid) != 0 || !_server_state.findChannelByUuid(channel_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    Channel *channel = _server_state.findChannelByUuid(channel_uuid);
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(channel->uuid)}, {"name", channel->name}, {"description", channel->description}, {"team", uuidToString(channel->team_uuid)}}));
+}
+
+void CommandHandler::_info_thread(int client_fd, const std::string &thread_str)
+{
     uuid_t thread_uuid;
-    if (uuid_parse(ctx.thread.c_str(), thread_uuid) != 0 || !_server_state.findThreadByUuid(thread_uuid)) {
+    if (uuid_parse(thread_str.c_str(), thread_uuid) != 0 || !_server_state.findThreadByUuid(thread_uuid)) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
         return;
     }
     Thread *thread = _server_state.findThreadByUuid(thread_uuid);
-    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(thread->uuid)},
-                                        {"title", thread->title},
-                                        {"body", thread->body},
-                                        {"channel", uuidToString(thread->channel_uuid)},
-                                        {"creator", uuidToString(thread->creator_uuid)},
-                                        {"timestamp", std::to_string(thread->timestamp)}}));
+    send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(thread->uuid)}, {"title", thread->title}, {"body", thread->body}, {"channel", uuidToString(thread->channel_uuid)}, {"creator", uuidToString(thread->creator_uuid)}, {"timestamp", std::to_string(thread->timestamp)}}));
 }

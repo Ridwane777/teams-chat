@@ -38,6 +38,32 @@ private:
     bool parse_uuid_field(const Frame &frame, const std::string &field_name, uuid_t &out_uuid,
                           int client_fd, const std::string &missing_reason, const std::string &invalid_reason);
 
+    // Login helpers
+    bool _validate_login_name(const std::string &name, int client_fd);
+    void _login_existing_user(User *user, int client_fd);
+    void _login_new_user(const std::string &name, int client_fd);
+
+    // Use context helpers
+    bool _validate_use_team(const std::string &team_str, std::string &out_team, int client_fd);
+    bool _validate_use_channel(const std::string &team_str, const std::string &chan_str, std::string &out_chan, int client_fd);
+    bool _validate_use_thread(const std::string &chan_str, const std::string &thread_str, std::string &out_thread, int client_fd);
+
+    // List helpers
+    void _list_teams(int client_fd);
+    void _list_channels(int client_fd, const std::string &team_str);
+    void _list_threads(int client_fd, const std::string &channel_str);
+    void _list_comments(int client_fd, const std::string &thread_str);
+
+    // Info helpers
+    void _info_self(int client_fd, User *self);
+    void _info_team(int client_fd, const std::string &team_str);
+    void _info_channel(int client_fd, const std::string &chan_str);
+    void _info_thread(int client_fd, const std::string &thread_str);
+
+    // Message helpers
+    bool _validate_message(const Frame &frame, User *sender, int client_fd, uuid_t &recipient_uuid);
+    void _send_message(Message &message, User *recipient, User *sender, int client_fd);
+
 public:
 
     CommandHandler();
