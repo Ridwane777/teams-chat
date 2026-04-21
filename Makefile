@@ -1,6 +1,13 @@
 CXX = clang++
 CXXFLAGS = -std=c++20 -Wall -Wextra -Werror -g3
-LDFLAGS = -luuid -Llibs/myteams -lmyteams -Wl
+UNAME_S := $(shell uname -s)
+ifeq ($(UNAME_S),Linux)
+UUID_LIB = -luuid
+else
+UUID_LIB =
+endif
+LDFLAGS = $(UUID_LIB) -L./libs/myteams -lmyteams -Wl,-rpath,./libs/myteams
+TEST_LDFLAGS = $(UUID_LIB)
 CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
 BIN             = unit_tests
@@ -63,7 +70,7 @@ $(BIN): CXXFLAGS += $(COVFLAGS)
 
 $(BIN): $(LIB_OBJECTS) $(TEST_OBJECTS)
 	@echo "$(GREEN)[LINKING TESTS]$(RESET) $@"
-	$(CXX) $(CXXFLAGS) $(COVFLAGS) -o $(BIN) $(LIB_OBJECTS) $(TEST_OBJECTS)
+	$(CXX) $(CXXFLAGS) $(COVFLAGS) -o $(BIN) $(LIB_OBJECTS) $(TEST_OBJECTS) $(TEST_LDFLAGS)
 
 tests_run: clean $(BIN)
 	./$(BIN) --verbose
