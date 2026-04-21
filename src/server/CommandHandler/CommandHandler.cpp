@@ -145,12 +145,6 @@ void CommandHandler::execute_command(int client_fd, Frame &frame)
 
 void CommandHandler::handle_login(int client_fd, Frame &frame)
 {
-    User *self = require_logged_user(client_fd);
-    if (self && self->is_logged_in) {
-        send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
-        return;
-    }
-
     std::string name = frame.get("name");
     if (!_validate_login_name(name, client_fd))
         return;
