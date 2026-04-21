@@ -167,10 +167,6 @@ bool CommandHandler::_validate_login_name(const std::string &name, int client_fd
 
 void CommandHandler::_login_existing_user(User *user, int client_fd)
 {
-    if (user->is_logged_in) {
-        send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
-        return;
-    }
     user->fd = client_fd;
     user->is_logged_in = true;
     server_event_user_logged_in(uuidToString(user->uuid).c_str());
