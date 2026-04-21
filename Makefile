@@ -92,6 +92,10 @@ clean:
 	rm -rf obj
 	rm -f *.gcda *.gcno *.gcov
 	rm -f src/*.gcda src/*.gcno
+	rm -f src/client/*.gcda src/client/*.gcno
+	rm -f src/server/*.gcda src/server/*.gcno
+	rm -f src/server/protocol/*.gcda src/server/protocol/*.gcno
+	rm -f src/server/CommandHandler/*.gcda src/server/CommandHandler/*.gcno
 	rm -f tests/*.gcda tests/*.gcno
 
 fclean: clean
