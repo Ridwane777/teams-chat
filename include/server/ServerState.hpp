@@ -99,6 +99,24 @@ private:
 
     void _writeString(std::ostream &os, const std::string &str) const;
     std::string _readString(std::istream &is) const;
+
+    // Persistence helpers for save
+    void _saveUsers(std::ofstream &os) const;
+    void _saveTeams(std::ofstream &os) const;
+    void _saveSubscriptions(std::ofstream &os) const;
+    void _saveChannels(std::ofstream &os) const;
+    void _saveThreads(std::ofstream &os) const;
+    void _saveComments(std::ofstream &os) const;
+    void _saveMessages(std::ofstream &os) const;
+
+    // Persistence helpers for load
+    int _loadUsers(std::ifstream &is);
+    int _loadTeams(std::ifstream &is);
+    int _loadSubscriptions(std::ifstream &is);
+    int _loadChannels(std::ifstream &is);
+    int _loadThreads(std::ifstream &is);
+    int _loadComments(std::ifstream &is);
+    int _loadMessages(std::ifstream &is);
 };
 
 #endif
