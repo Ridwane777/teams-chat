@@ -2,16 +2,19 @@
 #include <cerrno>
 
 volatile sig_atomic_t running = 1;
+Server* Server::instance = nullptr;
 
 void print_usage() {
     std::cout << "USAGE: ./myteams_server port\n"
                  " port is the port number on which the server socket listens" << std::endl;
 }
 
-void signalHandler(int signum)
+void Server::signalHandler(int signum)
 {
-    printf("\nInterrupt signal (%d) received. Shutting down the server...\n", signum);
-    running = 0;
+    std::cout << "\nInterrupt signal (" << signum << ") received. Shutting down the server...\n";
+    if (Server::instance != nullptr)
+        Server::instance->_command_handler.save_state("myteams.dat");
+    exit(0);
 }
 
 Server::Server()
@@ -107,18 +110,18 @@ void Server::handle_client()
 
 void Server::start(int port)
 {
-    signal(SIGINT, signalHandler);
+    Server::instance = this;
+    signal(SIGINT, &Server::signalHandler);
     signal(SIGCHLD, SIG_IGN);
 
     _command_handler.load_state("myteams.dat");
-
     create_socket();
     clients.push_back({sockfd, POLLIN, 0});
     int opt = 1;
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     bind_socket(port);
     listen_socket();
-    while (running) {
+    while (true) {
         int ready = poll(clients.data(), clients.size(), -1);
         if (ready < 0) {
             if (errno == EINTR)
@@ -128,8 +131,6 @@ void Server::start(int port)
         }
         handle_client();
     }
-    
-    _command_handler.save_state("myteams.dat");
 }
 
 int main(int argc, char *argv[])

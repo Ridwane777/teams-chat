@@ -32,6 +32,9 @@ private:
     std::map<int, std::string> client_buffers;
     CommandHandler _command_handler;
 
+    static Server* instance;
+    static void signalHandler(int signum);
+
 public:
     Server();
     void create_socket();
