@@ -6,7 +6,7 @@ UUID_LIB = -luuid
 else
 UUID_LIB =
 endif
-LDFLAGS = $(UUID_LIB) -L./libs/myteams -lmyteams -Wl,-rpath,./libs/myteams
+LDFLAGS = $(UUID_LIB) -Llibs/myteams -lmyteams -Wl
 TEST_LDFLAGS = $(UUID_LIB)
 CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
