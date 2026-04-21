@@ -55,6 +55,14 @@ void CommandHandler::broadcast_frame(const std::string &frame)
         send_frame(fd, frame);
 }
 
+void CommandHandler::broadcast_frame_except(int exclude_fd, const std::string &frame)
+{
+    for (int fd : _connected_clients) {
+        if (fd != exclude_fd)
+            send_frame(fd, frame);
+    }
+}
+
 void CommandHandler::broadcast_team_event(const uuid_t &team_uuid, const std::string &frame)
 {
     for (int fd : _connected_clients) {
@@ -101,7 +109,7 @@ void CommandHandler::disconnect_client_session(int fd)
     u->is_logged_in = false;
     u->fd = -1;
     server_event_user_logged_out(user_uuid.c_str());
-    broadcast_frame(_protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
+    broadcast_frame_except(fd, _protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
 }
 
 void CommandHandler::handle_logout_all_clients()
@@ -171,7 +179,7 @@ void CommandHandler::_login_existing_user(User *user, int client_fd)
     user->is_logged_in = true;
     server_event_user_logged_in(uuidToString(user->uuid).c_str());
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(user->uuid)}, {"name", user->name}, {"logged_in", "1"}}));
-    broadcast_frame(_protocol.evt(EventType::USER_ONLINE, {{"uuid", uuidToString(user->uuid)}, {"name", user->name}}));
+    broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_ONLINE, {{"uuid", uuidToString(user->uuid)}, {"name", user->name}}));
 }
 
 void CommandHandler::_login_new_user(const std::string &name, int client_fd)
@@ -181,7 +189,7 @@ void CommandHandler::_login_new_user(const std::string &name, int client_fd)
     std::string user_uuid = uuidToString(new_user.uuid);
     server_event_user_logged_in(user_uuid.c_str());
     send_frame(client_fd, _protocol.ok({{"uuid", user_uuid}, {"name", new_user.name}, {"logged_in", "1"}}));
-    broadcast_frame(_protocol.evt(EventType::USER_ONLINE, {{"uuid", user_uuid}, {"name", new_user.name}}));
+    broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_ONLINE, {{"uuid", user_uuid}, {"name", new_user.name}}));
 }
 
 void CommandHandler::handle_logout(int client_fd, Frame &frame)
@@ -197,7 +205,7 @@ void CommandHandler::handle_logout(int client_fd, Frame &frame)
     user->fd = -1;
     server_event_user_logged_out(user_uuid.c_str());
     send_frame(client_fd, _protocol.ok({}));
-    broadcast_frame(_protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
+    broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
 }
 
 void CommandHandler::handle_users_list(int client_fd, Frame &frame)
@@ -327,7 +335,7 @@ void CommandHandler::handle_team_create(int client_fd, Frame &frame)
     std::string team_uuid = uuidToString(team.uuid);
     std::string creator_uuid = uuidToString(team.creator_uuid);
     send_frame(client_fd, _protocol.ok({{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
-    broadcast_frame(_protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
+    broadcast_frame_except(client_fd, _protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
 }
 
 void CommandHandler::handle_team_sub(int client_fd, Frame &frame)

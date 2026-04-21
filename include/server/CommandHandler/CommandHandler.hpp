@@ -33,6 +33,7 @@ private:
 
     void send_frame(int fd, const std::string &frame);
     void broadcast_frame(const std::string &frame);
+    void broadcast_frame_except(int exclude_fd, const std::string &frame);
     void broadcast_team_event(const uuid_t &team_uuid, const std::string &frame);
     User *require_logged_user(int client_fd);
     bool parse_uuid_field(const Frame &frame, const std::string &field_name, uuid_t &out_uuid,
