@@ -16,7 +16,7 @@ void Server::signalHandler(int signum)
         Server::instance->_command_handler.save_state("myteams.dat");
         Server::instance->_command_handler.handle_logout_all_clients();
     }
-    exit(0);
+    running = 0;
 }
 
 Server::Server()
@@ -113,9 +113,7 @@ void Server::handle_client()
 void Server::start(int port)
 {
     Server::instance = this;
-    signal(SIGINT, &Server::signalHandler);
-    signal(SIGCHLD, SIG_IGN);
-
+    
     _command_handler.load_state("myteams.dat");
     create_socket();
     clients.push_back({sockfd, POLLIN, 0});
@@ -123,7 +121,9 @@ void Server::start(int port)
     setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &opt, sizeof(opt));
     bind_socket(port);
     listen_socket();
-    while (true) {
+    signal(SIGINT, &Server::signalHandler);
+    signal(SIGCHLD, SIG_IGN);
+    while (running) {
         int ready = poll(clients.data(), clients.size(), -1);
         if (ready < 0) {
             if (errno == EINTR)
