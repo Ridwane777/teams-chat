@@ -202,6 +202,7 @@ void UserCommand::handleUnsubscribe(int fd, const std::vector<std::string> &args
 
 void UserCommand::handleUse(int fd, const std::vector<std::string> &args)
 {
+    ResponseHandler::setPendingCommand("/use");
     std::string msg = "USE";
     if (args.size() >= 1) {
         _teamUuid = args[0];

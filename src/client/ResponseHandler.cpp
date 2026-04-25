@@ -77,6 +77,11 @@ void ResponseHandler::handle_ok(const std::map<std::string, std::string> &fields
     if (fields.count("count"))
         return;
 
+    if (_pendingCommand == "/use") {
+        // Server confirmed context update - nothing to display
+        return;
+    }
+
     if (_pendingCommand == "/login" && fields.count("logged_in")) {
         if (_selfUuid.empty()) {
             _selfUuid = fields.at("uuid");

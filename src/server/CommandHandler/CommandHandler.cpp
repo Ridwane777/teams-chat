@@ -341,8 +341,9 @@ void CommandHandler::handle_team_create(int client_fd, Frame &frame)
 
     std::string team_uuid = uuidToString(team.uuid);
     std::string creator_uuid = uuidToString(team.creator_uuid);
+    // Spec: "Every logged user should receive this event (the creator of the team too)"
+    broadcast_frame(_protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
     send_frame(client_fd, _protocol.ok({{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
-    broadcast_frame_except(client_fd, _protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
 }
 
 void CommandHandler::handle_team_sub(int client_fd, Frame &frame)
