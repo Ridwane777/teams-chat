@@ -175,6 +175,11 @@ bool CommandHandler::_validate_login_name(const std::string &name, int client_fd
 
 void CommandHandler::_login_existing_user(User *user, int client_fd)
 {
+    if (user->is_logged_in && user->fd != client_fd) {
+        // Already logged in from another connection — reject
+        send_frame(client_fd, _protocol.err(ErrCode::CONFLICT, "already_logged_in"));
+        return;
+    }
     user->fd = client_fd;
     user->is_logged_in = true;
     server_event_user_logged_in(uuidToString(user->uuid).c_str());
@@ -204,6 +209,8 @@ void CommandHandler::handle_logout(int client_fd, Frame &frame)
     user->is_logged_in = false;
     user->fd = -1;
     server_event_user_logged_out(user_uuid.c_str());
+    // Send the USER_OFFLINE event to the client itself first (spec requirement)
+    send_frame(client_fd, _protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
     send_frame(client_fd, _protocol.ok({}));
     broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_OFFLINE, {{"uuid", user_uuid}, {"name", user_name}}));
 }

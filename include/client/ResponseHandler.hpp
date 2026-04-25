@@ -11,6 +11,7 @@ public:
 
 private:
     static std::string _selfUuid;
+    static std::string _selfName;
     static std::string _pendingCommand;
 
     static void handle_error(const std::map<std::string, std::string> &fields);

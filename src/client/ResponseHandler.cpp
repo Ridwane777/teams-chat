@@ -5,6 +5,7 @@ extern "C" {
 }
 
 std::string ResponseHandler::_selfUuid = "";
+std::string ResponseHandler::_selfName = "";
 std::string ResponseHandler::_pendingCommand = "";
 
 void ResponseHandler::setPendingCommand(const std::string &cmd)
@@ -77,14 +78,16 @@ void ResponseHandler::handle_ok(const std::map<std::string, std::string> &fields
         return;
 
     if (_pendingCommand == "/login" && fields.count("logged_in")) {
-        if (_selfUuid.empty())
+        if (_selfUuid.empty()) {
             _selfUuid = fields.at("uuid");
+            _selfName = fields.at("name");
+        }
         client_event_logged_in(fields.at("uuid").c_str(), fields.at("name").c_str());
         return;
     }
 
     if (_pendingCommand == "/logout") {
-        return;
+        exit(0);
     }
 
     if (_pendingCommand == "/users" && fields.count("logged_in")) {
