@@ -78,7 +78,6 @@ void ResponseHandler::handle_ok(const std::map<std::string, std::string> &fields
         return;
 
     if (_pendingCommand == "/use") {
-        // Server confirmed context update - nothing to display
         return;
     }
 
