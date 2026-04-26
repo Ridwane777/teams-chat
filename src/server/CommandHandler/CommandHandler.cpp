@@ -177,6 +177,7 @@ void CommandHandler::_login_existing_user(User *user, int client_fd)
 {
     user->fd = client_fd;
     user->is_logged_in = true;
+    register_client_fd(client_fd);
     server_event_user_logged_in(uuidToString(user->uuid).c_str());
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(user->uuid)}, {"name", user->name}, {"logged_in", "1"}}));
     broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_ONLINE, {{"uuid", uuidToString(user->uuid)}, {"name", user->name}}));
@@ -187,6 +188,7 @@ void CommandHandler::_login_new_user(const std::string &name, int client_fd)
     User &new_user = _server_state.createUser(name, client_fd);
     new_user.is_logged_in = true;
     std::string user_uuid = uuidToString(new_user.uuid);
+    register_client_fd(client_fd);
     server_event_user_logged_in(user_uuid.c_str());
     send_frame(client_fd, _protocol.ok({{"uuid", user_uuid}, {"name", new_user.name}, {"logged_in", "1"}}));
     broadcast_frame_except(client_fd, _protocol.evt(EventType::USER_ONLINE, {{"uuid", user_uuid}, {"name", new_user.name}}));

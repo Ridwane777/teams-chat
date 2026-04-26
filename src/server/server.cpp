@@ -121,7 +121,6 @@ void Server::handle_client()
             if (clients[i].fd == sockfd) {
                 int new_fd = accept_socket();
                 clients.push_back({new_fd, POLLIN, 0});
-                _command_handler.register_client_fd(new_fd);
             } else {
                 char buffer[MAX];
                 bzero(buffer, sizeof(buffer));
