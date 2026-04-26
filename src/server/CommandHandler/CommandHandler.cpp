@@ -337,6 +337,12 @@ void CommandHandler::handle_team_create(int client_fd, Frame &frame)
 
     std::string team_uuid = uuidToString(team.uuid);
     std::string creator_uuid = uuidToString(team.creator_uuid);
+
+    ClientContext &ctx = _contexts[client_fd];
+    ctx.team = team_uuid;
+    ctx.channel.clear();
+    ctx.thread.clear();
+    
     broadcast_frame(_protocol.evt(EventType::TEAM_CREATED, {{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
     send_frame(client_fd, _protocol.ok({{"uuid", team_uuid}, {"name", team.name}, {"description", team.description}, {"creator", creator_uuid}}));
 }
@@ -551,6 +557,10 @@ void CommandHandler::handle_chan_create(int client_fd, Frame &frame)
     }
 
     Channel &channel = _server_state.createChannel(name, description, team_uuid, self->uuid);
+
+    ctx.channel = uuidToString(channel.uuid);
+    ctx.thread.clear();
+    
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(channel.uuid)},
                                         {"name", channel.name},
                                         {"description", channel.description},
@@ -585,6 +595,9 @@ void CommandHandler::handle_thread_create(int client_fd, Frame &frame)
     }
 
     Thread &thread = _server_state.createThread(frame.get("title"), frame.get("body"), channel_uuid, self->uuid);
+
+    ctx.thread = uuidToString(thread.uuid);
+    
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(thread.uuid)},
                                         {"title", thread.title},
                                         {"body", thread.body},
