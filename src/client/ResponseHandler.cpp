@@ -91,7 +91,7 @@ void ResponseHandler::handle_ok(const std::map<std::string, std::string> &fields
     }
 
     if (_pendingCommand == "/logout") {
-        return;
+        exit(0);
     }
 
     if (_pendingCommand == "/users" && fields.count("logged_in")) {
