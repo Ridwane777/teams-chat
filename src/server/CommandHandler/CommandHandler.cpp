@@ -363,6 +363,12 @@ void CommandHandler::handle_team_sub(int client_fd, Frame &frame)
     const std::string teamUUid = uuidToString(team_uuid);
     const std::string user = uuidToString(self->uuid);
     server_event_user_subscribed(teamUUid.c_str(), user.c_str());
+
+    ClientContext &ctx = _contexts[client_fd];
+    ctx.team = teamUUid;
+    ctx.channel.clear();
+    ctx.thread.clear();
+    
     send_frame(client_fd, _protocol.ok({{"team", uuidToString(team_uuid)}}));
 }
 
@@ -383,6 +389,15 @@ void CommandHandler::handle_team_unsub(int client_fd, Frame &frame)
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "not_subscribed"));
         return;
     }
+
+    ClientContext &ctx = _contexts[client_fd];
+    std::string team_str = uuidToString(team_uuid);
+    if (ctx.team == team_str) {
+        ctx.team.clear();
+        ctx.channel.clear();
+        ctx.thread.clear();
+    }
+    
     send_frame(client_fd, _protocol.ok({{"team", uuidToString(team_uuid)}}));
 }
 
