@@ -50,16 +50,16 @@ private:
     bool _validate_use_thread(const std::string &chan_str, const std::string &thread_str, std::string &out_thread, int client_fd);
 
     // List helpers
-    void _list_teams(int client_fd);
-    void _list_channels(int client_fd, const std::string &team_str);
-    void _list_threads(int client_fd, const std::string &channel_str);
+    void _list_teams(int client_fd, User *self);
+    void _list_channels(int client_fd, const std::string &team_str, User *self);
+    void _list_threads(int client_fd, const std::string &channel_str, User *self);
     void _list_comments(int client_fd, const std::string &thread_str);
 
     // Info helpers
     void _info_self(int client_fd, User *self);
-    void _info_team(int client_fd, const std::string &team_str);
-    void _info_channel(int client_fd, const std::string &chan_str);
-    void _info_thread(int client_fd, const std::string &thread_str);
+    void _info_team(int client_fd, const std::string &team_str, User *self);
+    void _info_channel(int client_fd, const std::string &chan_str, User *self);
+    void _info_thread(int client_fd, const std::string &thread_str, User *self);
 
     // Message helpers
     bool _validate_message(const Frame &frame, User *sender, int client_fd, uuid_t &recipient_uuid);

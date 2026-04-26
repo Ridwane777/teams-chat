@@ -103,9 +103,6 @@ Subscription &ServerState::createSubscription(const uuid_t &user_uuid,
     if (subscriptionExists(user_uuid, team_uuid))
         throw std::runtime_error("Subscription already exists");
     _subscriptions.emplace_back(user_uuid, team_uuid);
-    const std::string team = uuidToString(team_uuid);
-    const std::string user = uuidToString(user_uuid);
-    server_event_user_subscribed(team.c_str(), user.c_str());
     return _subscriptions.back();
 }
 

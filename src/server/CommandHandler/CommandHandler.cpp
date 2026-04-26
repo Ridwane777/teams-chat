@@ -360,6 +360,9 @@ void CommandHandler::handle_team_sub(int client_fd, Frame &frame)
         return;
     }
     _server_state.createSubscription(self->uuid, team_uuid);
+    const std::string teamUUid = uuidToString(team_uuid);
+    const std::string user = uuidToString(self->uuid);
+    server_event_user_subscribed(teamUUid.c_str(), user.c_str());
     send_frame(client_fd, _protocol.ok({{"team", uuidToString(team_uuid)}}));
 }
 
@@ -454,9 +457,14 @@ void CommandHandler::handle_use(int client_fd, Frame &frame)
 
 bool CommandHandler::_validate_use_team(const std::string &team_str, std::string &out_team, int client_fd)
 {
+    User *self = require_logged_user(client_fd);
     uuid_t team_uuid;
     if (uuid_parse(team_str.c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "team_not_found"));
+        return false;
+    }
+    if (!self || !_server_state.subscriptionExists(self->uuid, team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
         return false;
     }
     out_team = team_str;
@@ -623,17 +631,18 @@ void CommandHandler::handle_list(int client_fd, Frame &frame)
 
     ClientContext &ctx = _contexts[client_fd];
     if (ctx.team.empty())
-        _list_teams(client_fd);
+        _list_teams(client_fd, self);
     else if (ctx.channel.empty())
-        _list_channels(client_fd, ctx.team);
+        _list_channels(client_fd, ctx.team, self);
     else if (ctx.thread.empty())
-        _list_threads(client_fd, ctx.channel);
+        _list_threads(client_fd, ctx.channel, self);
     else
         _list_comments(client_fd, ctx.thread);
 }
 
-void CommandHandler::_list_teams(int client_fd)
+void CommandHandler::_list_teams(int client_fd, User *self)
 {
+    (void)self;
     std::string response;
     for (Team &team : _server_state.teams())
         response += _protocol.ok({{"uuid", uuidToString(team.uuid)}, {"name", team.name}, {"description", team.description}});
@@ -641,11 +650,15 @@ void CommandHandler::_list_teams(int client_fd)
     send_frame(client_fd, response);
 }
 
-void CommandHandler::_list_channels(int client_fd, const std::string &team_str)
+void CommandHandler::_list_channels(int client_fd, const std::string &team_str, User *self)
 {
     uuid_t team_uuid;
     if (uuid_parse(team_str.c_str(), team_uuid) != 0) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    if (!_server_state.subscriptionExists(self->uuid, team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
         return;
     }
     std::string response;
@@ -656,11 +669,20 @@ void CommandHandler::_list_channels(int client_fd, const std::string &team_str)
     send_frame(client_fd, response);
 }
 
-void CommandHandler::_list_threads(int client_fd, const std::string &channel_str)
+void CommandHandler::_list_threads(int client_fd, const std::string &channel_str, User *self)
 {
     uuid_t channel_uuid;
     if (uuid_parse(channel_str.c_str(), channel_uuid) != 0) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    Channel *channel = _server_state.findChannelByUuid(channel_uuid);
+    if (!channel) {
+        send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
+        return;
+    }
+    if (!_server_state.subscriptionExists(self->uuid, channel->team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
         return;
     }
     std::string response;
@@ -697,11 +719,11 @@ void CommandHandler::handle_info(int client_fd, Frame &frame)
     if (ctx.team.empty())
         _info_self(client_fd, self);
     else if (ctx.channel.empty())
-        _info_team(client_fd, ctx.team);
+        _info_team(client_fd, ctx.team, self);
     else if (ctx.thread.empty())
-        _info_channel(client_fd, ctx.channel);
+        _info_channel(client_fd, ctx.channel, self);
     else
-        _info_thread(client_fd, ctx.thread);
+        _info_thread(client_fd, ctx.thread, self);
 }
 
 void CommandHandler::_info_self(int client_fd, User *self)
@@ -709,18 +731,22 @@ void CommandHandler::_info_self(int client_fd, User *self)
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(self->uuid)}, {"name", self->name}, {"logged_in", self->is_logged_in ? "1" : "0"}}));
 }
 
-void CommandHandler::_info_team(int client_fd, const std::string &team_str)
+void CommandHandler::_info_team(int client_fd, const std::string &team_str, User *self)
 {
     uuid_t team_uuid;
     if (uuid_parse(team_str.c_str(), team_uuid) != 0 || !_server_state.findTeamByUuid(team_uuid)) {
         send_frame(client_fd, _protocol.err(ErrCode::NOT_FOUND, "resource_not_found"));
         return;
     }
+    if (!_server_state.subscriptionExists(self->uuid, team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
+        return;
+    }
     Team *team = _server_state.findTeamByUuid(team_uuid);
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(team->uuid)}, {"name", team->name}, {"description", team->description}, {"creator", uuidToString(team->creator_uuid)}}));
 }
 
-void CommandHandler::_info_channel(int client_fd, const std::string &chan_str)
+void CommandHandler::_info_channel(int client_fd, const std::string &chan_str, User *self)
 {
     uuid_t channel_uuid;
     if (uuid_parse(chan_str.c_str(), channel_uuid) != 0 || !_server_state.findChannelByUuid(channel_uuid)) {
@@ -728,10 +754,14 @@ void CommandHandler::_info_channel(int client_fd, const std::string &chan_str)
         return;
     }
     Channel *channel = _server_state.findChannelByUuid(channel_uuid);
+    if (!_server_state.subscriptionExists(self->uuid, channel->team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
+        return;
+    }
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(channel->uuid)}, {"name", channel->name}, {"description", channel->description}, {"team", uuidToString(channel->team_uuid)}}));
 }
 
-void CommandHandler::_info_thread(int client_fd, const std::string &thread_str)
+void CommandHandler::_info_thread(int client_fd, const std::string &thread_str, User *self)
 {
     uuid_t thread_uuid;
     if (uuid_parse(thread_str.c_str(), thread_uuid) != 0 || !_server_state.findThreadByUuid(thread_uuid)) {
@@ -739,5 +769,10 @@ void CommandHandler::_info_thread(int client_fd, const std::string &thread_str)
         return;
     }
     Thread *thread = _server_state.findThreadByUuid(thread_uuid);
+    Channel *channel = _server_state.findChannelByUuid(thread->channel_uuid);
+    if (!channel || !_server_state.subscriptionExists(self->uuid, channel->team_uuid)) {
+        send_frame(client_fd, _protocol.err(ErrCode::FORBIDDEN, "not_subscribed"));
+        return;
+    }
     send_frame(client_fd, _protocol.ok({{"uuid", uuidToString(thread->uuid)}, {"title", thread->title}, {"body", thread->body}, {"channel", uuidToString(thread->channel_uuid)}, {"creator", uuidToString(thread->creator_uuid)}, {"timestamp", std::to_string(thread->timestamp)}}));
 }

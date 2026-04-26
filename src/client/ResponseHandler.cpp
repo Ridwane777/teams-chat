@@ -43,6 +43,8 @@ void ResponseHandler::handle_error(const std::map<std::string, std::string> &fie
             client_error_unknown_user(uuid.c_str());
     } else if (code == "409")
         client_error_already_exist();
+    else if (code == "403")
+        client_error_unauthorized();
 }
 
 void ResponseHandler::handle_event(const std::map<std::string, std::string> &fields)
