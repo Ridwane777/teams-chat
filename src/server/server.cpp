@@ -84,39 +84,9 @@ void Server::process_client_data(int client_fd, const char *data, ssize_t len)
     }
 }
 
-void Server::flush_write_buffer(int client_fd)
-{
-    auto it = write_buffers.find(client_fd);
-    if (it == write_buffers.end() || it->second.empty())
-        return;
-
-    ssize_t n = write(client_fd, it->second.c_str(), it->second.size());
-    if (n > 0)
-        it->second.erase(0, static_cast<size_t>(n));
-
-    if (it->second.empty()) {
-        for (auto &pfd : clients) {
-            if (pfd.fd == client_fd) {
-                pfd.events &= ~POLLOUT;
-                break;
-            }
-        }
-    }
-}
-
-
 void Server::handle_client()
 {
-    std::vector<int> to_disconnect;
-
     for (size_t i = 0; i < clients.size(); ++i) {
-        if (clients[i].revents & POLLOUT)
-            flush_write_buffer(clients[i].fd);
-        if (clients[i].revents & (POLLHUP | POLLERR)) {
-            if (clients[i].fd != sockfd)
-                to_disconnect.push_back(clients[i].fd);
-            continue;
-        }
         if (clients[i].revents & POLLIN) {
             if (clients[i].fd == sockfd) {
                 int new_fd = accept_socket();
@@ -137,16 +107,6 @@ void Server::handle_client()
                 }
             }
         }
-    }
-    
-    for (int fd : to_disconnect) {
-        _command_handler.disconnect_client_session(fd);
-        _command_handler.unregister_client_fd(fd);
-        client_buffers.erase(fd);
-        write_buffers.erase(fd);
-        close(fd);
-        clients.erase(std::remove_if(clients.begin(), clients.end(),
-            [fd](const struct pollfd &p){ return p.fd == fd; }), clients.end());
     }
 }
 
