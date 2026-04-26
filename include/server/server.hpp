@@ -30,6 +30,7 @@ private:
     struct sockaddr_in servaddr, cli;
     std::vector<struct pollfd> clients;
     std::map<int, std::string> client_buffers;
+    std::map<int, std::string> write_buffers;
     CommandHandler _command_handler;
 
     static Server* instance;
@@ -44,6 +45,7 @@ public:
     void handle_client();
     void handle_command(int client_fd, const std::string &command);
     void process_client_data(int client_fd, const char *data, ssize_t len);
+    void flush_write_buffer(int client_fd);
     void start(int port = PORT);
 };
 

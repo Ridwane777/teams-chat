@@ -58,7 +58,6 @@ void Client::receive_response()
             handle_response(response);
         }
     } else if (n == 0) {
-        std::cout << "Server closed the connection.\n";
         _is_running = false;
     } else {
         if (errno != EAGAIN && errno != EWOULDBLOCK) {
@@ -101,7 +100,6 @@ void Client::run()
             receive_response();
         }
         if (fds[1].revents & (POLLHUP | POLLERR)) {
-            std::cout << "Server disconnected.\n";
             _is_running = false;
         }
     }
@@ -170,7 +168,7 @@ std::map<std::string, std::string> Client::parse_payload(const std::string &payl
 
     while (ss >> token) {
         size_t equalPos = token.find('=');
-        if (equalPos == std::string::npos || equalPos == 0 || equalPos == token.length() - 1) {
+        if (equalPos == std::string::npos || equalPos == 0) {
             throw std::invalid_argument("missing or invalid key=value format in token: " + token);
         }
         std::string key = token.substr(0, equalPos);
