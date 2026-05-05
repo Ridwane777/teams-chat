@@ -40,3 +40,7 @@ unit_tests
 
 # Ignore saving files
 *.dat
+
+bonus/**/node_modules/
+bonus/**/dist/
+bonus/**/.next/

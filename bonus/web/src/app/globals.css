@@ -1,0 +1,79 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  @apply bg-teams-shell text-teams-text antialiased;
+  font-family: "Segoe UI", "Inter", system-ui, sans-serif;
+}
+
+.network-loader {
+  position: relative;
+  width: min(80vw, 520px);
+  height: 220px;
+}
+
+.network-node {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 9999px;
+  background: #6264a7;
+  box-shadow: 0 0 0 7px rgba(98, 100, 167, 0.16);
+  animation: pulse-node 2.2s ease-in-out infinite;
+}
+
+.network-link {
+  position: absolute;
+  height: 2px;
+  background: linear-gradient(90deg, rgba(98, 100, 167, 0.2), rgba(98, 100, 167, 0.8), rgba(98, 100, 167, 0.2));
+  transform-origin: left center;
+  animation: flow-line 2.8s ease-in-out infinite;
+}
+
+@keyframes pulse-node {
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+  50% {
+    transform: scale(1.22);
+    opacity: 1;
+  }
+}
+
+@keyframes flow-line {
+  0%,
+  100% {
+    opacity: 0.28;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Scrollbars proches Teams v2 */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #d1d1d1 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: #d1d1d1;
+  border-radius: 4px;
+}

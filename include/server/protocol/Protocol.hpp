@@ -10,7 +10,8 @@ namespace ClientOp
     constexpr const char *LOGOUT = "OUT";
     constexpr const char *USERS_LIST = "ULS";
     constexpr const char *USER_GET = "UGT";
-    constexpr const char *MSG_SEND = "SND";
+    // Not named MSG_SEND: macOS sys/socket.h defines MSG_SEND as a macro.
+    constexpr const char *SEND_MESSAGE = "SND";
     constexpr const char *MSG_LIST = "MLS";
     constexpr const char *TEAM_CREATE = "TCR";
     constexpr const char *TEAM_SUB = "TSB";
