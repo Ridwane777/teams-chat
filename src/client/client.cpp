@@ -23,7 +23,7 @@ void Client::create_socket()
 
 void Client::connect_to_server(const std::string &ip, int port)
 {
-    explicit_bzero(&servaddr, sizeof(servaddr));
+    memset(&servaddr, 0, sizeof(servaddr));
     servaddr.sin_family = AF_INET;
     servaddr.sin_port = htons(port);
     if (inet_pton(AF_INET, ip.c_str(), &servaddr.sin_addr) <= 0) {
