@@ -6,15 +6,8 @@ UUID_LIB = -luuid
 else
 UUID_LIB =
 endif
-# Linux: link Ridwane777 binary. Darwin: shipped .so is ELF; use compiled stubs.
-ifeq ($(UNAME_S),Darwin)
-MYTEAMS_LINK = libs/myteams/libmyteams_stub.o
-MYTEAMS_DEP = libs/myteams/libmyteams_stub.o
-else
-MYTEAMS_LINK = -Llibs/myteams -lmyteams -Wl
-MYTEAMS_DEP =
-endif
-LDFLAGS = $(UUID_LIB) $(MYTEAMS_LINK)
+LOGGING_OBJ = libs/logging/logging.o
+LDFLAGS = $(UUID_LIB)
 TEST_LDFLAGS = $(UUID_LIB)
 CLIENT_TARGET = myteams_cli
 TARGET = myteams_server
@@ -54,15 +47,15 @@ RED := \033[0;31m
 GREEN := \033[0;32m
 RESET := \033[0m
 
-$(TARGET): $(SERVEROBJECTS) $(MYTEAMS_DEP)
+$(TARGET): $(SERVEROBJECTS) $(LOGGING_OBJ)
 	@echo "$(GREEN)[LINKING]$(RESET) $@"
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SERVEROBJECTS) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SERVEROBJECTS) $(LOGGING_OBJ) $(LDFLAGS)
 	mkdir -p obj/server
 	mv $(SERVEROBJECTS) obj/server/
 
-$(CLIENT_TARGET): $(CLIENTOBJECTS) $(MYTEAMS_DEP)
+$(CLIENT_TARGET): $(CLIENTOBJECTS) $(LOGGING_OBJ)
 	@echo "$(GREEN)[LINKING]$(RESET) $@"
-	$(CXX) $(CXXFLAGS) -o $(CLIENT_TARGET) $(CLIENTOBJECTS) $(LDFLAGS)
+	$(CXX) $(CXXFLAGS) -o $(CLIENT_TARGET) $(CLIENTOBJECTS) $(LOGGING_OBJ) $(LDFLAGS)
 	mkdir -p obj/client
 	mv $(CLIENTOBJECTS) obj/client/
 
@@ -94,7 +87,7 @@ coverage: tests_run
 		--print-summary
 
 clean:
-	rm -f libs/myteams/libmyteams_stub.o
+	rm -f $(LOGGING_OBJ)
 	rm -f $(SERVEROBJECTS)
 	rm -f $(CLIENTOBJECTS)
 	rm -f $(TEST_OBJECTS)

@@ -1,4 +1,4 @@
-name: MyTeams Build Gate
+name: Build Gate
 
 on:
   push:
@@ -30,7 +30,7 @@ jobs:
         fi
 
         if [ ! -x ./myteams_cli ]; then
-          echo "Missing or non-executable binary: myteams_client"
+          echo "Missing or non-executable binary: myteams_cli"
           ls -la
           exit 1
         fi

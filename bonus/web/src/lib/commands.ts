@@ -1,4 +1,4 @@
-/** Aligné sur la logique `UserCommand::handleList` / `handleInfo` côté client C++. */
+/** Mirrors the C++ client logic in `UserCommand::handleList` / `handleInfo`. */
 
 export function listPending(team: string, channel: string, thread: string): string {
   const t = team.trim();

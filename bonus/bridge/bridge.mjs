@@ -29,7 +29,7 @@ wss.on("connection", (ws, req) => {
 
   socket.setEncoding("utf8");
   socket.once("connect", () => {
-    sendJson({ type: "system", message: `TCP connecté à ${host}:${port}` });
+    sendJson({ type: "system", message: `TCP connected to ${host}:${port}` });
   });
   socket.on("data", (chunk) => {
     tcpBuf += chunk;
@@ -44,7 +44,7 @@ wss.on("connection", (ws, req) => {
     sendJson({ type: "error", message: err.message });
   });
   socket.on("close", () => {
-    sendJson({ type: "system", message: "Connexion TCP fermée" });
+    sendJson({ type: "system", message: "TCP connection closed" });
     ws.close();
   });
 
@@ -60,5 +60,5 @@ wss.on("connection", (ws, req) => {
 });
 
 console.log(
-  `Pont WebSocket ws://127.0.0.1:${WS_PORT}/?mtHost=…&mtPort=… → TCP (${DEFAULT_TCP_HOST}:${DEFAULT_TCP_PORT} par défaut)`
+  `WebSocket bridge ws://127.0.0.1:${WS_PORT}/?mtHost=…&mtPort=… → TCP (${DEFAULT_TCP_HOST}:${DEFAULT_TCP_PORT} by default)`
 );

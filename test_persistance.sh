@@ -3,13 +3,13 @@
 PORT=4243
 
 echo "--------------------------------------------------------"
-echo "=> Démarrage temporaire du serveur (port $PORT)..."
+echo "=> Starting a temporary server (port $PORT)..."
 ./myteams_server $PORT > /dev/null 2>&1 &
 SERVER_PID=$!
 sleep 1
 
-echo "=> Test 1 : Création de l'utilisateur 'alice' et de la team 'AlphaTeam'"
-# Envoi des commandes MTAP
+echo "=> Test 1: creating user 'alice' and team 'AlphaTeam'"
+# Send MTAP commands
 (
   echo "LOG name=alice"
   sleep 0.2
@@ -22,18 +22,18 @@ cat output_test1.txt
 
 sleep 1
 
-echo "=> Arrêt du serveur par SIGINT (CTRL+C simulé) -> Sauvegarde en cours"
+echo "=> Stopping the server with SIGINT (simulated CTRL+C) -> saving state"
 kill -SIGINT $SERVER_PID
 wait $SERVER_PID
 
 echo "--------------------------------------------------------"
 
-echo "=> Relance du serveur pour tester le rechargement..."
+echo "=> Restarting the server to test reloading..."
 ./myteams_server $PORT > /dev/null 2>&1 &
 SERVER_PID=$!
 sleep 1
 
-echo "=> Test 2 : Connexion de 'bob', on liste (LST) pour voir si AlphaTeam a bien été stockée..."
+echo "=> Test 2: logging in as 'bob' and listing (LST) to check AlphaTeam was persisted..."
 # Envoi de LOG et LST
 (
   echo "LOG name=bob"
@@ -47,8 +47,8 @@ cat output_test2.txt
 
 sleep 1
 
-echo "=> Arrêt final du serveur..."
+echo "=> Final server shutdown..."
 kill -SIGINT $SERVER_PID
 wait $SERVER_PID
 
-echo "=> Fin du test !"
+echo "=> Test finished!"

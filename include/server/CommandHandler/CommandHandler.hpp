@@ -10,7 +10,7 @@
 #include "../ServerState.hpp"
 #include "../../../include/server/protocol/Protocol.hpp"
 extern "C" {
-#include "../../../libs/myteams/logging_server.h"
+#include "../../../libs/logging/logging_server.h"
 }
 #include "../../Utils.hpp"
 

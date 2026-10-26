@@ -1,153 +1,82 @@
-# MyTeams - NWP
+# teams-chat
 
-Projet reseau de type client/serveur inspire de Teams, realise en C++20.
+A Microsoft Teams-style chat in C++20: a TCP server and a command-line client that share a small text protocol. Users log in, create teams, channels, threads and replies, subscribe to teams and send private messages. Events (new team, new reply, incoming message, someone logging in) are pushed to connected clients in real time. A Next.js web front end in `bonus/` talks to the same server through a WebSocket bridge.
 
-Le depot contient:
-- un serveur TCP (`myteams_server`)
-- un client console (`myteams_client`)
-- une specification de protocole MTAP dans [RFC-0001-MTAP.md](RFC-0001-MTAP.md)
+## Features
 
-## Objectif
+- Users: login/logout, list users, user details, online status
+- Teams, channels, threads and replies, with a `/use` context to navigate between them
+- Team subscriptions; only subscribers can read or post in a team
+- Private messages with history
+- Server-pushed events for team, channel, thread and reply creation, logins and private messages
+- State saved to disk on shutdown and reloaded on startup
+- Unit tests for the protocol, server state, entities, client command parsing and response handling
 
-Implementer une application collaborative avec:
-- gestion des utilisateurs
-- equipes (teams)
-- channels
-- threads
-- commentaires
-- messagerie directe
+## Architecture
 
-La communication suit le protocole MTAP (MyTeams Application Protocol), decrit dans [RFC-0001-MTAP.md](RFC-0001-MTAP.md).
+**Protocol.** Line-based text frames, `<OPCODE> key=value ...\n`, with URL-encoded values. Clients send three-letter opcodes (`LOG`, `OUT`, `ULS`, `TCR`, `LST`, `INF`, `USE`...), the server answers `OK` / `ERR code=... reason=...`, and pushes `EVT` frames for asynchronous events. The full spec (frame format, size limits, every opcode and error code) is in [RFC-0001-MTAP.md](RFC-0001-MTAP.md).
 
-## Prerequis
+**Server** (`src/server/`). A single-threaded `poll()` loop accepts clients and reads frames. `Protocol` decodes them, `CommandHandler` checks the session and context and dispatches each opcode, and `ServerState` holds users, teams, subscriptions, channels, threads, replies and private messages in memory. On `SIGINT` the state is written to `myteams.dat` (binary format) and loaded again at the next start.
 
-- Linux
-- `clang++` avec support C++20
-    ```
-    sudo apt update && sudo apt upgrade
-    sudo apt install clang
-    ```
-- `make`
-    ```
-    sudo apt update
-    sudo apt install make
-    ```
-    or
-    ```
-    sudo apt install build-essential
-    ```
-- bibliotheques reseau POSIX (`socket`, `poll`, etc.)
+**Client** (`src/client/`). A `poll()` loop watches both stdin and the server socket, so pushed events show up while the user is typing. `ClientCommand` parses commands such as `/login "alice"` or `/create "name" "description"` and encodes them as protocol frames. `ResponseHandler` decodes server replies and events and prints them through the logging library.
 
-## Compilation
+**Logging library** (`libs/logging/`). The project originally linked a course-provided display library that cannot be redistributed. `libs/logging` is a clean-room MIT-licensed reimplementation of the same C API, written without its source. Client functions print readable lines to stdout (errors to stderr), and server functions log one line per event to stderr. It is compiled from source by the Makefile, so the build works the same on Linux and macOS.
 
-Depuis la racine du projet:
-
-```bash
-make
+```text
+include/, src/
+  client/        client loop, ClientCommand, ResponseHandler
+  server/        server loop, Protocol, CommandHandler, ServerState
+  Entities.*     User, Team, Channel, Thread, Comment, Message
+libs/logging/    display/log library (MIT, clean-room)
+tests/           unit tests (custom runner, no external framework)
+bonus/           WebSocket bridge + Next.js web client
+RFC-0001-MTAP.md protocol specification
 ```
 
-Cibles utiles:
+## Build and run
+
+Requirements: `clang++` with C++20, `make`, and `libuuid` on Linux (`sudo apt install clang make uuid-dev`).
 
 ```bash
-make server   # build uniquement le serveur
-make client   # build uniquement le client
-make clean    # supprime objets temporaires
-make fclean   # clean + binaires
-make re       # rebuild complet
-```
-
-## Execution
-
-### 1. Lancer le serveur
-
-```bash
-./myteams_server <port>
-```
-
-Exemple:
-
-```bash
+make                 # builds myteams_server and myteams_cli
 ./myteams_server 4242
+./myteams_cli 127.0.0.1 4242
 ```
 
-### 2. Lancer le client
-
-Dans un autre terminal:
-
-```bash
-./myteams_client <server_ip> <port>
-```
-
-Exemple:
-
-```bash
-./myteams_client 127.0.0.1 4242
-```
-
-Le client lit les commandes en mode interactif (`>`).
-Tapez `exit` pour quitter le client.
-
-## Structure du projet
+Example session:
 
 ```text
-include/
-  client/client.hpp         # interface client TCP
-  server/server.hpp         # interface serveur TCP
-  server/ServerState.hpp    # etat metier (users/teams/channels/...)
-  Entities.hpp              # modeles (User, Team, Channel, ...)
-  Types.hpp                 # constantes et types communs
-
-src/
-  client/client.cpp         # point d'entree client
-  server/server.cpp         # point d'entree serveur
-  server/ServerState.cpp    # logique CRUD en memoire
-  Entities.cpp              # constructeurs des entites
-
-file/files/
-  Protocol.hpp/.cpp         # helpers de parsing/serialisation MTAP
-
-RFC-0001-MTAP.md            # specification protocolaire
-Makefile                    # build
+/login "alice"
+/create "core" "Core team"
+/subscribe "<team_uuid>"
+/use "<team_uuid>"
+/create "general" "General channel"
+/logout
 ```
 
-## Etat actuel
+Type `/help` in the client for the full command list. Other targets: `make server`, `make client`, `make clean`, `make fclean`, `make re`.
 
-Le projet contient deja:
-- la base reseau TCP (socket, bind, listen, accept, poll)
-- une boucle client interactive
-- des structures metier completes (`User`, `Team`, `Channel`, `Thread`, `Comment`, `Message`)
-- un `ServerState` en memoire pour manipuler ces entites
-- des utilitaires de protocole MTAP (encode/decode/parse/serialise)
+## Tests
 
-Points encore en cours:
-- branchement complet entre la boucle serveur et la logique metier
-- gestion de toutes les commandes MTAP cote serveur
-- gestion complete des evenements asynchrones
-- persistance disque integree au binaire final
-
-## Protocole MTAP
-
-Le protocole est textuel et oriente lignes:
-
-```text
-<OPCODE> <key=value ...>\n
+```bash
+make tests_run       # builds and runs the unit tests (21 tests)
+make coverage        # same, plus a gcovr summary (needs gcovr in .venv)
+./test_persistance.sh  # end-to-end check that state survives a server restart
 ```
 
-Exemples d'opcodes client -> serveur:
-- `LOG` (login)
-- `OUT` (logout)
-- `ULS` (liste des utilisateurs)
-- `TCR` (creation team)
-- `LST`, `INF`, `USE` (navigation/context)
+`tests_run` leaves coverage-instrumented objects behind, so run `make re` before building the binaries again.
 
-Reponses serveur:
-- `OK`
-- `ERR`
-- `EVT` (evenements serveur push)
+The CI workflow (`.github/workflows/compile-gate.yml`) builds the project on every push and pull request to `main` and checks that both binaries are produced.
 
-Pour le detail complet (champs, erreurs, limites de taille), voir `RFC-0001-MTAP.md`.
+## Web bonus
 
-## Notes
+`bonus/` contains a Teams-like web interface built with Next.js, React and Tailwind. Browsers cannot open raw TCP sockets, so a small Node.js bridge (`bonus/bridge`) maps each WebSocket session to one TCP connection to `myteams_server`. The web app sends the same protocol frames as the CLI client. MongoDB can optionally store connection preferences and a protocol log. See [bonus/README.md](bonus/README.md).
 
-- Le projet est en phase de developpement: certaines commandes peuvent etre non implementees selon l'etat courant du code.
-- Le serveur et le client sont prevus pour fonctionner sur une connexion TCP persistante.
+## Team
+
+Built as a team of three. **My contribution (Ridwane777):** the whole CLI client — command parsing/encoding (ClientCommand), server response decoding and display (ResponseHandler), the poll()-based network loop — plus server-side data persistence and the CI compile gate.
+
+Teammates:
+
+- Jean-Victor Brun ([@Jean-Victor-vinksmark](https://github.com/Jean-Victor-vinksmark))
+- Christopher Guidibi

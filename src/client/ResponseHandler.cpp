@@ -1,7 +1,7 @@
 #include "../../include/client/ResponseHandler.hpp"
 #include <iostream>
 extern "C" {
-#include "../../libs/myteams/logging_client.h"
+#include "../../libs/logging/logging_client.h"
 }
 
 std::string ResponseHandler::_selfUuid = "";

@@ -5,7 +5,7 @@
 #include <sstream>
 #include <stdexcept>
 extern "C" {
-#include "../../libs/myteams/logging_client.h"
+#include "../../libs/logging/logging_client.h"
 }
 
 Client::Client() : _is_running(true)
@@ -185,7 +185,7 @@ std::map<std::string, std::string> Client::parse_payload(const std::string &payl
 int main(int argc, char *argv[])
 {
     if (argc == 2 && std::string(argv[1]) == "--help") {
-        std::cout << "USAGE: ./myteams_client ip port\n"
+        std::cout << "USAGE: ./myteams_cli ip port\n"
                   << " ip is the server IPv4 address\n"
                   << " port is the server port number" << std::endl;
         return 0;

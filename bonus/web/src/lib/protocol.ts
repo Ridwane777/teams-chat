@@ -1,4 +1,4 @@
-/** Aligné sur `Protocol::encode` / `Client::url_encode` côté C++. */
+/** Mirrors `Protocol::encode` / `Client::url_encode` on the C++ side. */
 export function urlEncode(str: string): string {
   const hex = "0123456789ABCDEF";
   let res = "";

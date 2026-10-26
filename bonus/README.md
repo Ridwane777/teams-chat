@@ -1,22 +1,22 @@
-# Bonus — interface web (Next.js + React + Tailwind + MongoDB)
+# Bonus: web interface (Next.js + React + Tailwind + MongoDB)
 
-Interface web pilotant le **serveur TCP C++** `myteams_server`, avec le même **protocole** que le client CLI (`LOG`, `LST`, `TSB`, etc.). Un **pont WebSocket → TCP** (`bonus/bridge`) est nécessaire car le navigateur ne parle pas en socket brut vers le projet.
+A web interface that drives the C++ TCP server `myteams_server` using the same protocol as the CLI client (`LOG`, `LST`, `TSB`, etc.). A WebSocket-to-TCP bridge (`bonus/bridge`) is needed because a browser cannot open a raw TCP socket to the server.
 
-## Prérequis
+## Requirements
 
 - Node.js 18+
-- `myteams_server` compilé et lancé (ex. port `8080`)
-- **Optionnel** : MongoDB pour enregistrer les préférences de connexion (hôte / ports) et un journal des lignes de protocole vues par l’UI (`MONGODB_URI` dans l’environnement Next.js).
+- `myteams_server` built and running (e.g. on port `8080`)
+- Optional: MongoDB to store connection preferences (host / ports) and a log of the protocol lines seen by the UI (`MONGODB_URI` in the Next.js environment)
 
-## Démarrage
+## Getting started
 
-Terminal 1 — serveur C++ :
+Terminal 1, C++ server:
 
 ```bash
 ./myteams_server 8080
 ```
 
-Terminal 2 — pont :
+Terminal 2, bridge:
 
 ```bash
 cd bonus/bridge
@@ -24,26 +24,26 @@ npm install
 npm start
 ```
 
-Par défaut : WebSocket sur le port **4250**, TCP vers **127.0.0.1:8080** (variables `MYTEAMS_HOST`, `MYTEAMS_PORT`, `BRIDGE_PORT`).
+Defaults: WebSocket on port **4250**, TCP to **127.0.0.1:8080** (override with `MYTEAMS_HOST`, `MYTEAMS_PORT`, `BRIDGE_PORT`).
 
-Terminal 3 — interface **Next.js** :
+Terminal 3, Next.js front end:
 
 ```bash
 cd bonus/web
-cp .env.example .env.local   # optionnel : renseigner MONGODB_URI
+cp .env.example .env.local   # optional: set MONGODB_URI
 npm install
 npm run dev
 ```
 
-Ouvre **http://127.0.0.1:3000**. Va dans **Paramètres** : connecte le pont, puis **Login** (`LOG`). Les vues **Équipes**, **Discussion**, **Personnes** n’envoient que les trames déjà définies par le sujet.
+Open **http://127.0.0.1:3000**, go to **Settings**, connect the bridge, then log in (`LOG`). The Teams, Chat and People views only send frames already defined by the protocol.
 
-## Structure
+## Layout
 
-| Dossier      | Rôle |
-| ------------ | ---- |
-| `bridge/`    | Node (`ws` + `net`) : une session WebSocket ↔ une session TCP vers myteams |
-| `web/`       | Next.js (App Router) : shell façon Teams, pages alignées sur le client CLI + API `prefs` / `activity` (MongoDB optionnel) |
+| Folder    | Role |
+| --------- | ---- |
+| `bridge/` | Node (`ws` + `net`): one WebSocket session maps to one TCP session to the server |
+| `web/`    | Next.js (App Router): Teams-like shell, pages mirroring the CLI client, plus `prefs` / `activity` API routes (MongoDB optional) |
 
-## Moulinette / Linux
+The C++ binaries do not depend on anything in this folder. The bridge, the web front end and MongoDB are optional extras.
 
-Pour la notation Ridwane777, le binaire doit lier la **vraie** `libmyteams.so` sous Linux. Le pont, le front Next et MongoDB sont du bonus.
+Note: the UI labels are still in French.

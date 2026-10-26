@@ -13,7 +13,7 @@ type Ws = {
   setThreadUuid: (v: string) => void;
   clearAll: () => void;
   sendUse: () => void;
-  /** Met à jour le contexte local et envoie la trame USE (sans attendre un re-render). */
+  /** Updates the local context and sends the USE frame (without waiting for a re-render). */
   applyContext: (team: string, channel?: string, thread?: string) => void;
 };
 

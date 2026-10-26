@@ -1,6 +1,6 @@
 #include "../../include/server/ServerState.hpp"
 extern "C" {
-#include "../../libs/myteams/logging_server.h"
+#include "../../libs/logging/logging_server.h"
 }
 #include <algorithm>
 #include <stdexcept>
