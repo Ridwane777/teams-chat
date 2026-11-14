@@ -4,6 +4,8 @@
 
 A Microsoft Teams-style chat in C++20: a TCP server and a command-line client that share a small text protocol. Users log in, create teams, channels, threads and replies, subscribe to teams and send private messages. Events (new team, new reply, incoming message, someone logging in) are pushed to connected clients in real time. A Next.js web front end in `bonus/` talks to the same server through a WebSocket bridge.
 
+![Two CLI clients: alice and bob log in, exchange private messages and receive events in real time](docs/media/cli-demo.gif)
+
 ## Features
 
 - Users: login/logout, list users, user details, online status
@@ -89,7 +91,7 @@ The CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request
 
 ## Web bonus
 
-`bonus/` contains a Teams-like web interface built with Next.js, React and Tailwind. Browsers cannot open raw TCP sockets, so a small Node.js bridge (`bonus/bridge`) maps each WebSocket session to one TCP connection to `myteams_server`. The web app sends the same protocol frames as the CLI client. MongoDB can optionally store connection preferences and a protocol log. See [bonus/README.md](bonus/README.md).
+`bonus/` contains an experimental Teams-like web interface (a protocol-level prototype: users are picked by UUID and the labels are still partly in French) built with Next.js, React and Tailwind. Browsers cannot open raw TCP sockets, so a small Node.js bridge (`bonus/bridge`) maps each WebSocket session to one TCP connection to `myteams_server`. The web app sends the same protocol frames as the CLI client. MongoDB can optionally store connection preferences and a protocol log. See [bonus/README.md](bonus/README.md).
 
 ## Team
 
