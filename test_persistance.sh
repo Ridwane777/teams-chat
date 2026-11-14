@@ -2,6 +2,9 @@
 
 PORT=4243
 
+# Start from an empty state
+rm -f myteams.dat
+
 echo "--------------------------------------------------------"
 echo "=> Starting a temporary server (port $PORT)..."
 ./myteams_server $PORT > /dev/null 2>&1 &
@@ -13,7 +16,7 @@ echo "=> Test 1: creating user 'alice' and team 'AlphaTeam'"
 (
   echo "LOG name=alice"
   sleep 0.2
-  echo "TCR name=AlphaTeam description=Notre%20premiere%20equipe"
+  echo "TCR name=AlphaTeam description=Our%20first%20team"
   sleep 0.2
   echo "OUT"
   sleep 0.2
@@ -51,4 +54,10 @@ echo "=> Final server shutdown..."
 kill -SIGINT $SERVER_PID
 wait $SERVER_PID
 
-echo "=> Test finished!"
+if grep -q "AlphaTeam" output_test2.txt; then
+  echo "=> PASS: AlphaTeam survived the restart"
+  rm -f output_test1.txt output_test2.txt
+else
+  echo "=> FAIL: AlphaTeam was not reloaded"
+  exit 1
+fi

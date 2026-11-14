@@ -1,0 +1,32 @@
+name: CI
+
+on:
+  push:
+    branches:
+    - main
+  pull_request:
+    branches:
+    - main
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: sudo apt-get update -q && sudo apt-get install -y uuid-dev clang netcat-openbsd
+
+    - name: Unit tests
+      run: make tests_run
+
+    - name: Build binaries
+      run: |
+        make re
+        test -x ./myteams_server
+        test -x ./myteams_cli
+
+    - name: Persistence test (state survives a server restart)
+      run: ./test_persistance.sh

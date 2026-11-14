@@ -1,5 +1,7 @@
 # teams-chat
 
+[![CI](https://github.com/Ridwane777/teams-chat/actions/workflows/ci.yml/badge.svg)](https://github.com/Ridwane777/teams-chat/actions/workflows/ci.yml)
+
 A Microsoft Teams-style chat in C++20: a TCP server and a command-line client that share a small text protocol. Users log in, create teams, channels, threads and replies, subscribe to teams and send private messages. Events (new team, new reply, incoming message, someone logging in) are pushed to connected clients in real time. A Next.js web front end in `bonus/` talks to the same server through a WebSocket bridge.
 
 ## Features
@@ -61,12 +63,12 @@ Type `/help` in the client for the full command list. Other targets: `make serve
 ```bash
 make tests_run       # builds and runs the unit tests (21 tests)
 make coverage        # same, plus a gcovr summary (needs gcovr in .venv)
-./test_persistance.sh  # end-to-end check that state survives a server restart
+./test_persistance.sh  # end-to-end check that state survives a server restart (needs nc)
 ```
 
 `tests_run` leaves coverage-instrumented objects behind, so run `make re` before building the binaries again.
 
-The CI workflow (`.github/workflows/compile-gate.yml`) builds the project on every push and pull request to `main` and checks that both binaries are produced.
+The CI workflow (`.github/workflows/ci.yml`) runs on every push and pull request to `main`: unit tests, build of both binaries, then the persistence test against a real server.
 
 ## Web bonus
 
@@ -74,7 +76,7 @@ The CI workflow (`.github/workflows/compile-gate.yml`) builds the project on eve
 
 ## Team
 
-Built as a team of three. **My contribution (Ridwane777):** the whole CLI client - command parsing/encoding (ClientCommand), server response decoding and display (ResponseHandler), the poll()-based network loop - plus server-side data persistence and the CI compile gate.
+Built as a team of three. **My contribution (Ridwane777):** the whole CLI client - command parsing/encoding (ClientCommand), server response decoding and display (ResponseHandler), the poll()-based network loop - plus server-side data persistence and the CI.
 
 Teammates:
 
