@@ -3,7 +3,7 @@ Request for Comments: 11 April 2026
 Category: Informational
 
 ═══════════════════════════════════════════════════════════════════════
-         MyTeams Application Protocol (MTAP) — Version 1.0
+         MyTeams Application Protocol (MTAP) - Version 1.0
 ═══════════════════════════════════════════════════════════════════════
 
 Status of This Document
@@ -75,13 +75,13 @@ Table of Contents
    The key words "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHOULD",
    "MAY" in this document follow RFC 2119.
 
-   CLIENT   — An instance of myteams_cli connected to the server.
-   SERVER   — The myteams_server process.
-   UUID     — A 36-character string in the canonical 8-4-4-4-12 hex
+   CLIENT   - An instance of myteams_cli connected to the server.
+   SERVER   - The myteams_server process.
+   UUID     - A 36-character string in the canonical 8-4-4-4-12 hex
               format as produced by uuid_unparse_lower(3).
-   FRAME    — The atomic unit of communication on the wire.
-   OPCODE   — A 3-character ASCII identifier for a command or event.
-   FIELD    — A key=value pair within a payload.
+   FRAME    - The atomic unit of communication on the wire.
+   OPCODE   - A 3-character ASCII identifier for a command or event.
+   FIELD    - A key=value pair within a payload.
 
 3. Transport Layer
 
@@ -98,7 +98,7 @@ Table of Contents
 
 4.1. Frame Header
 
-   Every frame — whether a command, response, or server event — has
+   Every frame - whether a command, response, or server event - has
    the following ASCII text structure:
 
       <OPCODE> <PAYLOAD>\n
@@ -191,7 +191,7 @@ Table of Contents
 
 6. Command Reference (Client → Server)
 
-6.1. LOGIN  —  Opcode: LOG
+6.1. LOGIN  -  Opcode: LOG
 
    Sent by the client to establish a named session. If a user with
    the given name already exists, the session is resumed. Otherwise
@@ -213,7 +213,7 @@ Table of Contents
       ERR code=400 reason=invalid_name\n      (name too long / empty)
       ERR code=409 reason=already_logged_in\n (session already active)
 
-6.2. LOGOUT  —  Opcode: OUT
+6.2. LOGOUT  -  Opcode: OUT
 
    Disconnects the client. The server marks the user as offline and
    broadcasts a USER_OFFLINE event to all connected clients.
@@ -224,7 +224,7 @@ Table of Contents
    Success response (sent before closing the connection):
       OK\n
 
-6.3. LIST ALL USERS  —  Opcode: ULS
+6.3. LIST ALL USERS  -  Opcode: ULS
 
    Returns one OK frame per user, followed by a final OK with
    field count=<n>.
@@ -240,7 +240,7 @@ Table of Contents
    Error:
       ERR code=401 reason=not_logged_in\n
 
-6.4. GET USER  —  Opcode: UGT
+6.4. GET USER  -  Opcode: UGT
 
    Request:
       UGT uuid=<user_uuid>\n
@@ -252,7 +252,7 @@ Table of Contents
       ERR code=401 reason=not_logged_in\n
       ERR code=404 reason=user_not_found\n
 
-6.5. SEND MESSAGE  —  Opcode: SND
+6.5. SEND MESSAGE  -  Opcode: SND
 
    Sends a direct message to another user. The server stores the
    message and, if the recipient is online, delivers an MSG_RECEIVED
@@ -274,7 +274,7 @@ Table of Contents
       ERR code=400 reason=body_too_long\n
       ERR code=403 reason=cannot_message_self\n
 
-6.6. LIST MESSAGES  —  Opcode: MLS
+6.6. LIST MESSAGES  -  Opcode: MLS
 
    Lists all messages exchanged between the current user and another.
    Messages are returned in ascending chronological order.
@@ -292,7 +292,7 @@ Table of Contents
       ERR code=401 reason=not_logged_in\n
       ERR code=404 reason=user_not_found\n
 
-6.7. CREATE TEAM  —  Opcode: TCR
+6.7. CREATE TEAM  -  Opcode: TCR
 
    Request:
       TCR name=<name> description=<description>\n
@@ -306,7 +306,7 @@ Table of Contents
       ERR code=400 reason=name_too_long\n
       ERR code=409 reason=team_exists\n
 
-6.8. SUBSCRIBE  —  Opcode: TSB
+6.8. SUBSCRIBE  -  Opcode: TSB
 
    Subscribes the current user to a team. After subscribing, the user
    receives all events related to that team (new channels, threads,
@@ -323,7 +323,7 @@ Table of Contents
       ERR code=404 reason=team_not_found\n
       ERR code=409 reason=already_subscribed\n
 
-6.9. UNSUBSCRIBE  —  Opcode: TUS
+6.9. UNSUBSCRIBE  -  Opcode: TUS
 
    Request:
       TUS team=<team_uuid>\n
@@ -336,7 +336,7 @@ Table of Contents
       ERR code=404 reason=team_not_found\n
       ERR code=404 reason=not_subscribed\n
 
-6.10. LIST SUBSCRIPTIONS  —  Opcode: TSD
+6.10. LIST SUBSCRIPTIONS  -  Opcode: TSD
 
    With no argument: lists all teams the current user is subscribed to.
    With a team UUID: lists all users subscribed to that team.
@@ -347,12 +347,12 @@ Table of Contents
    Request (with team):
       TSD team=<team_uuid>\n
 
-   Success — teams (one per frame):
+   Success - teams (one per frame):
       OK uuid=<team_uuid> name=<name> description=<desc>\n
       ...
       OK count=<n>\n
 
-   Success — members (one per frame):
+   Success - members (one per frame):
       OK uuid=<user_uuid> name=<name> logged_in=<0|1>\n
       ...
       OK count=<n>\n
@@ -361,7 +361,7 @@ Table of Contents
       ERR code=401 reason=not_logged_in\n
       ERR code=404 reason=team_not_found\n
 
-6.11. CREATE CHANNEL  —  Opcode: CCR
+6.11. CREATE CHANNEL  -  Opcode: CCR
 
    Requires an active team context (set via USE, Section 6.16).
    The requesting user MUST be subscribed to the team.
@@ -379,7 +379,7 @@ Table of Contents
       ERR code=403 reason=not_subscribed\n
       ERR code=409 reason=channel_exists\n
 
-6.12. CREATE THREAD  —  Opcode: HCR
+6.12. CREATE THREAD  -  Opcode: HCR
 
    Requires team + channel context. User MUST be subscribed.
 
@@ -396,7 +396,7 @@ Table of Contents
       ERR code=403 reason=context_required\n
       ERR code=403 reason=not_subscribed\n
 
-6.13. CREATE COMMENT  —  Opcode: OCR
+6.13. CREATE COMMENT  -  Opcode: OCR
 
    Requires team + channel + thread context. User MUST be subscribed.
 
@@ -413,7 +413,7 @@ Table of Contents
       ERR code=403 reason=context_required\n
       ERR code=403 reason=not_subscribed\n
 
-6.14. LIST  —  Opcode: LST
+6.14. LIST  -  Opcode: LST
 
    Context-sensitive listing command. Behaviour depends on USE context:
 
@@ -435,7 +435,7 @@ Table of Contents
    Error:
       ERR code=401 reason=not_logged_in\n
 
-6.15. INFO  —  Opcode: INF
+6.15. INFO  -  Opcode: INF
 
    Context-sensitive info command:
 
@@ -457,7 +457,7 @@ Table of Contents
       ERR code=401 reason=not_logged_in\n
       ERR code=404 reason=resource_not_found\n
 
-6.16. SET CONTEXT  —  Opcode: USE
+6.16. SET CONTEXT  -  Opcode: USE
 
    Sets the current working context for LST, INF, CCR, HCR, OCR.
    Sending USE with no arguments clears the context entirely.
@@ -489,7 +489,7 @@ Table of Contents
 7. Event Reference (Server → Client)
 
    The server sends EVT frames to notify subscribed clients of changes.
-   EVT frames are unsolicited — they may arrive at any time between
+   EVT frames are unsolicited - they may arrive at any time between
    command responses.
 
    General EVT format:
@@ -656,12 +656,12 @@ Table of Contents
          body=Hey%20Alice!
          timestamp=1743811260\n
 
-12.4  Error — command before login:
+12.4  Error - command before login:
 
    C: ULS\n
    S: ERR code=401 reason=not_logged_in\n
 
-12.5  Error — body too long:
+12.5  Error - body too long:
 
    C: SND to=<uuid> body=<513-character-string>\n
    S: ERR code=400 reason=body_too_long\n

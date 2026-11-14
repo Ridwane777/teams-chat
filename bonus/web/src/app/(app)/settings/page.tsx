@@ -56,7 +56,7 @@ export default function SettingsPage() {
         if (!j.ok) setSaveMsg(j.error ?? "Erreur");
         else {
           setMongo(j.mongo ?? false);
-          setSaveMsg(j.mongo ? "Enregistré dans MongoDB." : "MongoDB non configuré (MONGODB_URI) — rien n’a été persisté.");
+          setSaveMsg(j.mongo ? "Enregistré dans MongoDB." : "MongoDB non configuré (MONGODB_URI) - rien n’a été persisté.");
         }
       })
       .catch(() => setSaveMsg("Échec réseau."));

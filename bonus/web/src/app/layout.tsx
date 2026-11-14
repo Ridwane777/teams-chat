@@ -4,7 +4,7 @@ import { Providers } from "./providers";
 import AppSplash from "@/components/teams/app-splash";
 
 export const metadata: Metadata = {
-  title: "MY TEAMS — interface bonus",
+  title: "MY TEAMS - interface bonus",
   description: "Interface web pilotant myteams_server (protocole TCP existant).",
 };
 

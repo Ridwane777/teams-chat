@@ -74,9 +74,13 @@ The CI workflow (`.github/workflows/compile-gate.yml`) builds the project on eve
 
 ## Team
 
-Built as a team of three. **My contribution (Ridwane777):** the whole CLI client — command parsing/encoding (ClientCommand), server response decoding and display (ResponseHandler), the poll()-based network loop — plus server-side data persistence and the CI compile gate.
+Built as a team of three. **My contribution (Ridwane777):** the whole CLI client - command parsing/encoding (ClientCommand), server response decoding and display (ResponseHandler), the poll()-based network loop - plus server-side data persistence and the CI compile gate.
 
 Teammates:
 
 - Jean-Victor Brun ([@Jean-Victor-vinksmark](https://github.com/Jean-Victor-vinksmark))
 - Christopher Guidibi
+
+## License
+
+[MIT](LICENSE)
