@@ -1,0 +1,28 @@
+# One command to try everything: docker compose up --build
+# then open http://localhost:3000 (CLI: docker compose exec server myteams_cli 127.0.0.1 8080)
+services:
+  server:
+    build: .
+    ports:
+      - "8080:8080"   # TCP protocol, for the CLI client
+      - "4250:4250"   # WebSocket bridge (shares this container's network)
+    volumes:
+      - teams-data:/data
+
+  bridge:
+    build: bonus/bridge
+    # Same network namespace as the server, so the bridge's default target
+    # 127.0.0.1:8080 reaches it, matching the web app's default settings.
+    network_mode: "service:server"
+    depends_on:
+      - server
+
+  web:
+    build: bonus/web
+    ports:
+      - "3000:3000"
+    depends_on:
+      - bridge
+
+volumes:
+  teams-data:

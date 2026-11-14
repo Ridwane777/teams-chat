@@ -35,6 +35,23 @@ bonus/           WebSocket bridge + Next.js web client
 RFC-0001-MTAP.md protocol specification
 ```
 
+## Try it with Docker
+
+One command starts the server, the WebSocket bridge and the web interface:
+
+```bash
+docker compose up --build
+```
+
+Then open http://localhost:3000, go to **Settings**, connect, and log in. The server also listens on port 8080 for
+the CLI client:
+
+```bash
+docker compose exec server myteams_cli 127.0.0.1 8080
+```
+
+The server state is kept in the `teams-data` volume across restarts (`docker compose down -v` resets it).
+
 ## Build and run
 
 Requirements: `clang++` with C++20, `make`, and `libuuid` on Linux (`sudo apt install clang make uuid-dev`).
